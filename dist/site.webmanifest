@@ -1,0 +1,10 @@
+{
+  "name": "JLL Montagens",
+  "short_name": "JLL",
+  "description": "Montagem de móveis e instalação de TVs e painéis no Rio de Janeiro.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#081c24",
+  "theme_color": "#f2a93b",
+  "icons": []
+}

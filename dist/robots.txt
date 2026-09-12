@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jll-montagens-rj.elven-sugar-8499.chatgpt.site/sitemap.xml
