@@ -16,7 +16,8 @@ document.querySelectorAll('#main-nav a').forEach(link=>link.addEventListener('cl
 
 fetch('/config.json').then(response=>response.json()).then(config=>{
   document.querySelector('#cnpj').textContent=`CNPJ: ${config.cnpj}`;
-  const number=String(config.whatsappNumber||'').replace(/\D/g,'');
+  const rawNumber=String(config.whatsappNumber||'').replace(/\D/g,'');
+  const number=rawNumber&& !rawNumber.startsWith('55') ? `55${rawNumber}` : rawNumber;
   const message=encodeURIComponent(config.whatsappMessage||'Olá! Gostaria de solicitar um orçamento.');
   if(number){const schema=document.querySelector('#business-schema');const data=JSON.parse(schema.textContent);data.telephone=`+${number}`;schema.textContent=JSON.stringify(data)}
   document.querySelectorAll('.whatsapp-link').forEach(link=>{link.href=number?`https://wa.me/${number}?text=${message}`:'#';if(number){link.target='_blank'}else{link.addEventListener('click',event=>{event.preventDefault();const alert=document.querySelector('#config-alert');alert.hidden=false;clearTimeout(window.configTimer);window.configTimer=setTimeout(()=>alert.hidden=true,5000)})}});

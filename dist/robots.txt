@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jll-montagens-rj.jjmelo-g.chatgpt.site/sitemap.xml
+Sitemap: https://portal-cliente-jade.vercel.app/sitemap.xml
