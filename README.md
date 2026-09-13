@@ -15,4 +15,4 @@ Enquanto `whatsappNumber` estiver vazio, os botões exibem um aviso de configura
 
 ## SEO e campanhas
 
-Ao conectar um domínio próprio, atualize o endereço absoluto em `dist/index.html`, `dist/robots.txt`, `dist/sitemap.xml` e `dist/politica-de-privacidade.html`. Antes de ativar Google Ads, Analytics ou outras tags, revise a política de privacidade e implemente o consentimento necessário para as ferramentas escolhidas.
+O endereço principal configurado para SEO é `https://www.jllmontagens.com.br/`; o domínio sem `www` deve redirecionar para ele. Antes de ativar Google Ads, Analytics ou outras tags, revise a política de privacidade e implemente o consentimento necessário para as ferramentas escolhidas.

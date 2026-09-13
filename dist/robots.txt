@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://portal-cliente-jade.vercel.app/sitemap.xml
+Sitemap: https://www.jllmontagens.com.br/sitemap.xml
