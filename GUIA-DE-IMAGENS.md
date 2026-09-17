@@ -26,6 +26,11 @@ Mantendo o mesmo nome, não é necessário alterar o HTML.
 | `montador-moveis-rio.webp` | Montador no Rio de Janeiro |
 | `atendimento-baixada.webp` | Baixada Fluminense |
 | `atendimento-niteroi-sao-goncalo.webp` | Niterói e São Gonçalo |
+| `montador-moveis-rio.webp` | Zona Oeste do Rio |
+| `montagem-moveis-rj.webp` | Zona Norte do Rio |
+| `montagem-camas-racks-mesas.webp` | Centro do Rio |
+| `montagem-guarda-roupa.webp` | Zona Sudoeste do Rio |
+| `atendimento-baixada.webp` | Duque de Caxias |
 
 ## Se quiser mudar também o nome do arquivo
 
