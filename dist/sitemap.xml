@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://www.jllmontagens.com.br/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://www.jllmontagens.com.br/politica-de-privacidade.html</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
-  </url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url><loc>https://www.jllmontagens.com.br/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.jllmontagens.com.br/montagem-de-moveis-rj/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>0.9</priority><image:image><image:loc>https://www.jllmontagens.com.br/assets/servicos/montagem-moveis-rj.webp</image:loc><image:title>Montagem de móveis no RJ</image:title></image:image></url>
+  <url><loc>https://www.jllmontagens.com.br/montagem-de-guarda-roupa/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>0.8</priority><image:image><image:loc>https://www.jllmontagens.com.br/assets/servicos/montagem-guarda-roupa.webp</image:loc><image:title>Montagem de guarda-roupa</image:title></image:image></url>
+  <url><loc>https://www.jllmontagens.com.br/montagem-de-cozinhas/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>0.8</priority><image:image><image:loc>https://www.jllmontagens.com.br/assets/servicos/montagem-cozinha.webp</image:loc><image:title>Montagem de cozinhas</image:title></image:image></url>
+  <url><loc>https://www.jllmontagens.com.br/montagem-de-camas-racks-mesas/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>0.8</priority><image:image><image:loc>https://www.jllmontagens.com.br/assets/servicos/montagem-camas-racks-mesas.webp</image:loc><image:title>Montagem de camas, racks e mesas</image:title></image:image></url>
+  <url><loc>https://www.jllmontagens.com.br/instalacao-de-tv-e-painel/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>0.8</priority><image:image><image:loc>https://www.jllmontagens.com.br/assets/servicos/instalacao-tv-painel.webp</image:loc><image:title>Instalação de TV e painel</image:title></image:image></url>
+  <url><loc>https://www.jllmontagens.com.br/montador-de-moveis-rio-de-janeiro/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>0.8</priority><image:image><image:loc>https://www.jllmontagens.com.br/assets/servicos/montador-moveis-rio.webp</image:loc><image:title>Montador de móveis no Rio de Janeiro</image:title></image:image></url>
+  <url><loc>https://www.jllmontagens.com.br/montagem-de-moveis-baixada-fluminense/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>0.8</priority><image:image><image:loc>https://www.jllmontagens.com.br/assets/servicos/atendimento-baixada.webp</image:loc><image:title>Montagem de móveis na Baixada Fluminense</image:title></image:image></url>
+  <url><loc>https://www.jllmontagens.com.br/montagem-de-moveis-niteroi-sao-goncalo/</loc><lastmod>2026-09-17</lastmod><changefreq>monthly</changefreq><priority>0.8</priority><image:image><image:loc>https://www.jllmontagens.com.br/assets/servicos/atendimento-niteroi-sao-goncalo.webp</image:loc><image:title>Montagem de móveis em Niterói e São Gonçalo</image:title></image:image></url>
+  <url><loc>https://www.jllmontagens.com.br/politica-de-privacidade.html</loc><lastmod>2026-09-12</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>

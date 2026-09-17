@@ -5,25 +5,25 @@ const areas={
   norte:{kicker:'NORTE FLUMINENSE',title:'Da costa ao interior',copy:'Atendimento sob consulta e agendamento nas cidades do Norte Fluminense.',places:['Campos dos Goytacazes','Macaé','Rio das Ostras','Carapebus','Quissamã','São João da Barra','São Francisco de Itabapoana','Conceição de Macabu']}
 };
 
-const renderArea=(key)=>{const area=areas[key];if(!area)return;document.querySelector('#area-kicker').textContent=area.kicker;document.querySelector('#area-title').textContent=area.title;document.querySelector('#area-copy').textContent=area.copy;document.querySelector('#area-list').innerHTML=area.places.map(place=>`<li>${place}</li>`).join('');document.querySelectorAll('.area-tabs button').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.area===key)))};
+const renderArea=(key)=>{const area=areas[key];const kicker=document.querySelector('#area-kicker');if(!area||!kicker)return;kicker.textContent=area.kicker;document.querySelector('#area-title').textContent=area.title;document.querySelector('#area-copy').textContent=area.copy;document.querySelector('#area-list').innerHTML=area.places.map(place=>`<li>${place}</li>`).join('');document.querySelectorAll('.area-tabs button').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.area===key)))};
 
 document.querySelectorAll('.area-tabs button').forEach(button=>button.addEventListener('click',()=>renderArea(button.dataset.area)));
 renderArea('capital');
 
 const menuButton=document.querySelector('.menu-toggle');
-menuButton.addEventListener('click',()=>{const header=document.querySelector('.site-header');const open=header.classList.toggle('open');menuButton.setAttribute('aria-expanded',String(open))});
+if(menuButton)menuButton.addEventListener('click',()=>{const header=document.querySelector('.site-header');const open=header.classList.toggle('open');menuButton.setAttribute('aria-expanded',String(open))});
 document.querySelectorAll('#main-nav a').forEach(link=>link.addEventListener('click',()=>{document.querySelector('.site-header').classList.remove('open');menuButton.setAttribute('aria-expanded','false')}));
 
 fetch('/config.json').then(response=>response.json()).then(config=>{
-  document.querySelector('#cnpj').textContent=`CNPJ: ${config.cnpj}`;
+  const cnpj=document.querySelector('#cnpj');if(cnpj)cnpj.textContent=`CNPJ: ${config.cnpj}`;
   const rawNumber=String(config.whatsappNumber||'').replace(/\D/g,'');
   const number=rawNumber&& !rawNumber.startsWith('55') ? `55${rawNumber}` : rawNumber;
   const message=encodeURIComponent(config.whatsappMessage||'Olá! Gostaria de solicitar um orçamento.');
-  if(number){const schema=document.querySelector('#business-schema');const data=JSON.parse(schema.textContent);data.telephone=`+${number}`;schema.textContent=JSON.stringify(data)}
+  if(number){const schema=document.querySelector('#business-schema');if(schema){const data=JSON.parse(schema.textContent);data.telephone=`+${number}`;schema.textContent=JSON.stringify(data)}}
   document.querySelectorAll('.whatsapp-link').forEach(link=>{link.href=number?`https://wa.me/${number}?text=${message}`:'#';if(number){link.target='_blank'}else{link.addEventListener('click',event=>{event.preventDefault();const alert=document.querySelector('#config-alert');alert.hidden=false;clearTimeout(window.configTimer);window.configTimer=setTimeout(()=>alert.hidden=true,5000)})}});
 }).catch(()=>{});
 
-document.querySelector('#year').textContent=new Date().getFullYear();
+const year=document.querySelector('#year');if(year)year.textContent=new Date().getFullYear();
 const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target)}}),{threshold:.12});
 document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
 
