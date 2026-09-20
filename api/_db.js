@@ -13,7 +13,7 @@ function normalizePhone(value) {
 
 function publicConversation(row) {
   if (!row) return null;
-  return { id: row.id, ticketNumber: row.ticket_number, customerName: row.customer_name, phone: row.phone, status: row.status, createdAt: row.created_at, updatedAt: row.updated_at };
+  return { id: row.id, ticketNumber: row.numero_atendimento, customerName: row.nome_cliente, phone: row.telefone, status: row.status, createdAt: row.criado_em, updatedAt: row.atualizado_em };
 }
 
 module.exports = { getDatabase, normalizePhone, publicConversation };

@@ -6,10 +6,10 @@ module.exports = async function handler(req, res) {
   if (phone.length < 12) return res.status(400).json({ error: 'Informe um telefone válido.' });
   try {
     const sql = getDatabase();
-    const conversations = await sql`SELECT * FROM atendimentos WHERE phone = ${phone} AND status <> 'closed' ORDER BY updated_at DESC LIMIT 1`;
+    const conversations = await sql`SELECT * FROM atendimentos WHERE telefone = ${phone} AND status <> 'SERVICO_FINALIZADO' ORDER BY atualizado_em DESC LIMIT 1`;
     if (!conversations[0]) return res.status(404).json({ error: 'Não encontramos atendimento aberto para este telefone.' });
     const conversation = conversations[0];
-    const messages = await sql`SELECT id, sender_type, body, created_at FROM mensagens WHERE conversation_id = ${conversation.id} ORDER BY created_at ASC`;
+    const messages = await sql`SELECT id, tipo_remetente AS sender_type, texto AS body, criado_em AS created_at FROM mensagens WHERE atendimento_id = ${conversation.id} ORDER BY criado_em ASC`;
     return res.status(200).json({ conversation: publicConversation(conversation), messages });
   } catch (error) {
     console.error('Resume conversation failed', error);

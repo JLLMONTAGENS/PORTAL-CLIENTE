@@ -8,6 +8,8 @@ A branch `homologacao` agora possui a base para a API da mensageria:
 
 Se o schema original em inglês já foi executado, use `database/migracao-nomes-portugues.sql` uma única vez. A migração renomeia as tabelas e preserva os dados.
 
+Os status oficiais são `PENDENTE`, `GEROU_ORCAMENTO`, `ATRIBUIDO_MONTADOR` e `SERVICO_FINALIZADO`.
+
 ## Primeira configuração
 
 1. Execute `database/schema.sql` no SQL Editor do projeto Neon.
