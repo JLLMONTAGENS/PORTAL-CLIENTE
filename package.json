@@ -1,0 +1,9 @@
+{
+  "name": "jll-montagens",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Site e API de atendimento da JLL Montagens",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.1"
+  }
+}
