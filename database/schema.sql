@@ -3,7 +3,7 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TABLE IF NOT EXISTS staff_users (
+CREATE TABLE IF NOT EXISTS usuarios_atendimento (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS staff_users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS assemblers (
+CREATE TABLE IF NOT EXISTS montadores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   phone TEXT,
@@ -21,14 +21,14 @@ CREATE TABLE IF NOT EXISTS assemblers (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS conversations (
+CREATE TABLE IF NOT EXISTS atendimentos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_number BIGSERIAL UNIQUE,
   customer_name TEXT NOT NULL,
   phone TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'quote_generated', 'assembler_assigned', 'service_completed', 'closed')),
-  assigned_assembler_id UUID REFERENCES assemblers(id),
-  assigned_staff_id UUID REFERENCES staff_users(id),
+  assigned_assembler_id UUID REFERENCES montadores(id),
+  assigned_staff_id UUID REFERENCES usuarios_atendimento(id),
   service_details TEXT,
   scheduled_for TIMESTAMPTZ,
   service_value_cents INTEGER CHECK (service_value_cents IS NULL OR service_value_cents >= 0),
@@ -37,16 +37,16 @@ CREATE TABLE IF NOT EXISTS conversations (
   closed_at TIMESTAMPTZ
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS conversations_one_open_per_phone
-  ON conversations (phone)
+CREATE UNIQUE INDEX IF NOT EXISTS atendimentos_um_aberto_por_telefone
+  ON atendimentos (phone)
   WHERE status <> 'closed';
 
-CREATE INDEX IF NOT EXISTS conversations_status_updated_idx
-  ON conversations (status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS atendimentos_status_atualizado_idx
+  ON atendimentos (status, updated_at DESC);
 
-CREATE TABLE IF NOT EXISTS messages (
+CREATE TABLE IF NOT EXISTS mensagens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  conversation_id UUID NOT NULL REFERENCES atendimentos(id) ON DELETE CASCADE,
   sender_type TEXT NOT NULL CHECK (sender_type IN ('customer', 'staff', 'system')),
   sender_id UUID,
   body TEXT,
@@ -54,12 +54,12 @@ CREATE TABLE IF NOT EXISTS messages (
   CHECK (body IS NOT NULL OR sender_type = 'system')
 );
 
-CREATE INDEX IF NOT EXISTS messages_conversation_created_idx
-  ON messages (conversation_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS mensagens_atendimento_criado_idx
+  ON mensagens (conversation_id, created_at ASC);
 
-CREATE TABLE IF NOT EXISTS message_attachments (
+CREATE TABLE IF NOT EXISTS anexos_mensagem (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  message_id UUID NOT NULL REFERENCES mensagens(id) ON DELETE CASCADE,
   storage_url TEXT NOT NULL,
   file_name TEXT NOT NULL,
   mime_type TEXT NOT NULL,
@@ -67,13 +67,13 @@ CREATE TABLE IF NOT EXISTS message_attachments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS conversation_events (
+CREATE TABLE IF NOT EXISTS eventos_atendimento (
   id BIGSERIAL PRIMARY KEY,
-  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  conversation_id UUID NOT NULL REFERENCES atendimentos(id) ON DELETE CASCADE,
   event_type TEXT NOT NULL,
   details JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS conversation_events_conversation_idx
-  ON conversation_events (conversation_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS eventos_atendimento_criado_idx
+  ON eventos_atendimento (conversation_id, created_at ASC);

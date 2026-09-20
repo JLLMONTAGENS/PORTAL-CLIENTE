@@ -3,8 +3,10 @@
 A branch `homologacao` agora possui a base para a API da mensageria:
 
 - `api/health.js` testa se a função da Vercel consegue acessar o PostgreSQL.
-- `database/schema.sql` cria usuários da retaguarda, montadores, atendimentos, mensagens, anexos e histórico de eventos.
-- A regra de banco `conversations_one_open_per_phone` impede dois atendimentos não encerrados para o mesmo telefone.
+- `database/schema.sql` cria as tabelas `usuarios_atendimento`, `montadores`, `atendimentos`, `mensagens`, `anexos_mensagem` e `eventos_atendimento`.
+- A regra de banco `atendimentos_um_aberto_por_telefone` impede dois atendimentos não encerrados para o mesmo telefone.
+
+Se o schema original em inglês já foi executado, use `database/migracao-nomes-portugues.sql` uma única vez. A migração renomeia as tabelas e preserva os dados.
 
 ## Primeira configuração
 
