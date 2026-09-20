@@ -1,0 +1,18 @@
+const { getDatabase, normalizePhone, publicConversation } = require('../_db');
+
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
+  const phone = normalizePhone(req.body?.phone);
+  if (phone.length < 12) return res.status(400).json({ error: 'Informe um telefone válido.' });
+  try {
+    const sql = getDatabase();
+    const conversations = await sql`SELECT * FROM conversations WHERE phone = ${phone} AND status <> 'closed' ORDER BY updated_at DESC LIMIT 1`;
+    if (!conversations[0]) return res.status(404).json({ error: 'Não encontramos atendimento aberto para este telefone.' });
+    const conversation = conversations[0];
+    const messages = await sql`SELECT id, sender_type, body, created_at FROM messages WHERE conversation_id = ${conversation.id} ORDER BY created_at ASC`;
+    return res.status(200).json({ conversation: publicConversation(conversation), messages });
+  } catch (error) {
+    console.error('Resume conversation failed', error);
+    return res.status(500).json({ error: 'Não foi possível recuperar o atendimento.' });
+  }
+};
