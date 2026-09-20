@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
     const conversations = await sql`SELECT * FROM atendimentos WHERE telefone = ${phone} AND status <> 'SERVICO_FINALIZADO' ORDER BY atualizado_em DESC LIMIT 1`;
     if (!conversations[0]) return res.status(404).json({ error: 'Não encontramos atendimento aberto para este telefone.' });
     const conversation = conversations[0];
-    const messages = await sql`SELECT id, tipo_remetente AS sender_type, texto AS body, criado_em AS created_at FROM mensagens WHERE atendimento_id = ${conversation.id} ORDER BY criado_em ASC`;
+    const messages = await sql`SELECT m.id, m.tipo_remetente AS sender_type, m.texto AS body, m.criado_em AS created_at, a.id AS attachment_id, a.tipo_mime AS attachment_mime FROM mensagens m LEFT JOIN anexos_mensagem a ON a.mensagem_id = m.id WHERE m.atendimento_id = ${conversation.id} ORDER BY m.criado_em ASC`;
     return res.status(200).json({ conversation: publicConversation(conversation), messages });
   } catch (error) {
     console.error('Resume conversation failed', error);

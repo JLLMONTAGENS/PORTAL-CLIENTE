@@ -19,9 +19,9 @@ module.exports = async function handler(req, res) {
     const blob = await put(`atendimentos/${conversationId}/${Date.now()}-${fileName}`, fileBuffer, { access: 'private', contentType: mimeType, addRandomSuffix: true });
     const messages = await sql`INSERT INTO mensagens (atendimento_id, tipo_remetente, texto) VALUES (${conversationId}, 'CLIENTE', 'Imagem enviada') RETURNING id, tipo_remetente AS sender_type, texto AS body, criado_em AS created_at`;
     const message = messages[0];
-    await sql`INSERT INTO anexos_mensagem (mensagem_id, url_armazenamento, nome_arquivo, tipo_mime, tamanho_bytes) VALUES (${message.id}, ${blob.url}, ${fileName}, ${mimeType}, ${fileBuffer.length})`;
+    const attachments = await sql`INSERT INTO anexos_mensagem (mensagem_id, url_armazenamento, nome_arquivo, tipo_mime, tamanho_bytes) VALUES (${message.id}, ${blob.url}, ${fileName}, ${mimeType}, ${fileBuffer.length}) RETURNING id`;
     await sql`UPDATE atendimentos SET atualizado_em = NOW() WHERE id = ${conversationId}`;
-    return res.status(201).json({ message, attachment: { fileName, mimeType, size: fileBuffer.length } });
+    return res.status(201).json({ message: { ...message, attachment_id: attachments[0].id, attachment_mime: mimeType }, attachment: { fileName, mimeType, size: fileBuffer.length } });
   } catch (error) {
     console.error('Photo upload failed', error);
     return res.status(500).json({ error: 'Não foi possível enviar a imagem.' });
