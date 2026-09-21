@@ -6,7 +6,7 @@ const jllConversions=(()=>{
     if(!key||hasAlreadyFired(key))return false;
     window.dataLayer=window.dataLayer||[];
     window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};
-    window.gtag('event','click_whatsapp',{conversion_origin:origin});
+    window.gtag('event','click_whatsapp',{conversion_origin:origin,send_to:'G-VHS20ZGDH3'});
     remember(key);
     return true;
   };
