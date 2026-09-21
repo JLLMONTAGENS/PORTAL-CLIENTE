@@ -1,3 +1,21 @@
+const jllConversions=(()=>{
+  const storagePrefix='jll-google-ads-conversion:';
+  const hasAlreadyFired=key=>{try{return sessionStorage.getItem(`${storagePrefix}${key}`)==='1'}catch(_){return false}};
+  const remember=key=>{try{sessionStorage.setItem(`${storagePrefix}${key}`,'1')}catch(_){}}
+  const emitOnce=(key,origin)=>{
+    if(!key||hasAlreadyFired(key))return false;
+    window.dataLayer=window.dataLayer||[];
+    window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};
+    window.gtag('event','click_whatsapp',{conversion_origin:origin});
+    remember(key);
+    return true;
+  };
+  return {
+    trackWhatsAppClick:()=>emitOnce('whatsapp_click','whatsapp'),
+    trackNewConversation:conversationId=>emitOnce(`new_chat_conversation:${conversationId}`,'new_chat_conversation')
+  };
+})();
+
 const areas={
   capital:{kicker:'RIO DE JANEIRO — CAPITAL',title:'Da Zona Sul à Zona Oeste',copy:'Atendimento em bairros residenciais e comerciais de toda a cidade.',places:['Barra da Tijuca','Recreio dos Bandeirantes','Jacarepaguá','Tijuca','Vila Isabel','Méier','Madureira','Campo Grande','Bangu','Copacabana','Ipanema','Leblon','Botafogo','Flamengo','Laranjeiras','Centro','Santa Teresa','Ilha do Governador']},
   metropolitana:{kicker:'REGIÃO METROPOLITANA',title:'Grande Rio conectado',copy:'Serviços agendados nas principais cidades ao redor da capital.',places:['Niterói','São Gonçalo','Itaboraí','Maricá','Tanguá','Rio Bonito','Cachoeiras de Macacu','Magé','Guapimirim','Duque de Caxias','São João de Meriti','Nilópolis']},
@@ -20,7 +38,7 @@ fetch('/config.json').then(response=>response.json()).then(config=>{
   const number=rawNumber&& !rawNumber.startsWith('55') ? `55${rawNumber}` : rawNumber;
   const message=encodeURIComponent(config.whatsappMessage||'Olá! Gostaria de solicitar um orçamento.');
   if(number){const schema=document.querySelector('#business-schema');if(schema){const data=JSON.parse(schema.textContent);data.telephone=`+${number}`;schema.textContent=JSON.stringify(data)}}
-  document.querySelectorAll('.whatsapp-link').forEach(link=>{link.href=number?`https://wa.me/${number}?text=${message}`:'#';if(number){link.target='_blank'}else{link.addEventListener('click',event=>{event.preventDefault();const alert=document.querySelector('#config-alert');alert.hidden=false;clearTimeout(window.configTimer);window.configTimer=setTimeout(()=>alert.hidden=true,5000)})}});
+  document.querySelectorAll('.whatsapp-link').forEach(link=>{link.href=number?`https://wa.me/${number}?text=${message}`:'#';if(number){link.target='_blank';if(config.conversionTrigger==='whatsapp_click')link.addEventListener('click',()=>jllConversions.trackWhatsAppClick())}else{link.addEventListener('click',event=>{event.preventDefault();const alert=document.querySelector('#config-alert');alert.hidden=false;clearTimeout(window.configTimer);window.configTimer=setTimeout(()=>alert.hidden=true,5000)})}});
 }).catch(()=>{});
 
 const year=document.querySelector('#year');if(year)year.textContent=new Date().getFullYear();
