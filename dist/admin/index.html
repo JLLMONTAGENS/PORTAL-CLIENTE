@@ -9,11 +9,12 @@
   </section>
   <section id="dashboard-view" hidden>
     <header class="topbar"><div><div class="brand">JLL <span>MONTAGENS</span></div><h1>Painel de atendimentos</h1></div><div class="top-actions"><button id="change-password" class="ghost">Trocar senha</button><button id="logout" class="ghost">Sair</button></div></header>
-    <div class="toolbar"><div class="filters" role="tablist"><button class="filter active" data-status="">Todos</button><button class="filter attention-filter" data-status="__NAO_RESPONDIDAS__">● Não respondidas</button><button class="filter" data-status="PENDENTE">Pendentes</button><button class="filter" data-status="GEROU_ORCAMENTO">Orçamento gerado</button><button class="filter" data-status="ATRIBUIDO_MONTADOR">Atribuídos</button><button class="filter" data-status="SERVICO_FINALIZADO">Finalizados</button></div><button id="refresh" class="refresh">Atualizar</button></div>
+    <div class="toolbar"><div class="filters" role="tablist"><button class="filter active attention-filter" data-status="__NAO_RESPONDIDAS__">● Não respondidas</button><button class="filter" data-status="PENDENTE">Pendentes</button><button class="filter" data-status="GEROU_ORCAMENTO">Orçamento gerado</button><button class="filter" data-status="ATRIBUIDO_MONTADOR">Atribuídos</button><button class="filter" data-status="SERVICO_FINALIZADO">Finalizados</button></div><button id="refresh" class="refresh">Atualizar</button></div>
     <div class="workspace"><section class="queue-pane"><div id="summary" class="summary"></div><div id="list" class="attendance-list"></div></section><section id="conversation-pane" class="conversation-pane"><div class="conversation-empty"><span>▣</span><h2>Selecione um atendimento</h2><p>Escolha uma conversa na fila para visualizar o histórico e responder ao cliente.</p></div></section></div><p id="dashboard-error" class="error" role="alert"></p>
   </section>
 <div id="password-modal" class="modal" hidden><div class="modal-card"><button id="close-password" class="modal-close" aria-label="Fechar">×</button><h2>Trocar senha</h2><p>Use uma senha com pelo menos 10 caracteres.</p><form id="password-form"><label>Senha atual<input name="senhaAtual" type="password" required></label><label>Nova senha<input name="novaSenha" type="password" minlength="10" required></label><label>Confirme a nova senha<input name="confirmacao" type="password" minlength="10" required></label><button type="submit">Salvar nova senha</button><p id="password-message" class="error" role="alert"></p></form></div></div></main><script src="/admin/admin.js"></script>
 </body></html>
+
 
 
 
