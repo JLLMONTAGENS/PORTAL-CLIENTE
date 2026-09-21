@@ -1,6 +1,7 @@
 {
   "whatsappNumber": "21981063558",
   "whatsappMessage": "Olá, JLL Montagens! Gostaria de solicitar um orçamento.",
+  "conversionTrigger": "new_chat_conversation",
   "cnpj": "42.172.099/0001-59",
   "companyName": "JLL Montagens"
 }
