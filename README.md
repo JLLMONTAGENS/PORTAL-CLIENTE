@@ -2,16 +2,15 @@
 
 Site institucional otimizado para apresentação dos serviços de montagem de móveis e instalação de TVs e painéis no estado do Rio de Janeiro.
 
-## Alterar WhatsApp e dados da empresa
+## Chat online e dados da empresa
 
 Edite o arquivo `dist/config.json`:
 
-- `whatsappNumber`: número com código do país e DDD, somente dígitos. Exemplo: `5521999999999`.
-- `whatsappMessage`: mensagem inicial que será aberta no WhatsApp.
+- `whatsappNumber`: telefone institucional usado apenas nos dados estruturados de SEO.
 - `cnpj`: CNPJ exibido no rodapé.
 - `companyName`: nome da empresa.
 
-Enquanto `whatsappNumber` estiver vazio, os botões exibem um aviso de configuração em vez de abrir o WhatsApp.
+Na homologação, todos os botões de orçamento abrem o chat interno. Não existe redirecionamento para o WhatsApp.
 
 ## SEO e campanhas
 
