@@ -6,6 +6,9 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS usuarios_atendimento (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT NOT NULL,
+  nome_exibicao TEXT NOT NULL,
+  nome_completo TEXT NOT NULL,
+  login TEXT NOT NULL UNIQUE,
   email TEXT NOT NULL UNIQUE,
   senha_hash TEXT NOT NULL,
   perfil TEXT NOT NULL DEFAULT 'ATENDENTE' CHECK (perfil IN ('ADMINISTRADOR', 'ATENDENTE')),
@@ -77,3 +80,24 @@ CREATE TABLE IF NOT EXISTS eventos_atendimento (
 
 CREATE INDEX IF NOT EXISTS eventos_atendimento_criado_idx
   ON eventos_atendimento (atendimento_id, criado_em ASC);
+
+CREATE TABLE IF NOT EXISTS orcamentos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  atendimento_id UUID NOT NULL UNIQUE REFERENCES atendimentos(id) ON DELETE CASCADE,
+  numero_atendimento BIGINT NOT NULL,
+  nome_cliente TEXT NOT NULL,
+  telefone_cliente TEXT NOT NULL,
+  telefone_alternativo TEXT,
+  descricao_servico TEXT NOT NULL,
+  valor_centavos INTEGER NOT NULL CHECK (valor_centavos >= 0),
+  agendado_para TIMESTAMPTZ NOT NULL,
+  endereco TEXT NOT NULL,
+  referencia TEXT,
+  montador_id UUID REFERENCES montadores(id),
+  gerado_por UUID NOT NULL REFERENCES usuarios_atendimento(id),
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS orcamentos_agendamento_idx
+  ON orcamentos (agendado_para ASC);

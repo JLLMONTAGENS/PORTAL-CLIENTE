@@ -18,3 +18,14 @@ Os status oficiais são `PENDENTE`, `GEROU_ORCAMENTO`, `ATRIBUIDO_MONTADOR` e `S
 4. O resultado esperado é `{"ok":true,"database":true}`.
 
 As credenciais continuam apenas nas variáveis da Vercel. Nunca coloque a URL do banco em arquivos públicos ou no repositório.
+
+## Evolução de usuários e orçamentos
+
+Para uma base que já está em uso, execute `database/migracao-usuarios-orcamentos.sql` antes de publicar esta versão. A migração:
+
+- preserva os usuários existentes e usa o e-mail atual como login inicial;
+- acrescenta nome de exibição e nome completo;
+- cria a tabela de orçamentos vinculada ao atendimento;
+- pode ser executada novamente sem duplicar estruturas.
+
+Depois da migração, o administrador pode ajustar o login e os demais dados pelo menu **Usuários** do painel.
