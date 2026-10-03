@@ -12,7 +12,7 @@ const QUEUE_REFRESH_MS=4000,CONVERSATION_REFRESH_MS=3000;
 async function api(url,options={}){
   const response=await fetch(url,{cache:'no-store',...options});
   const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(data.error||'Não foi possível concluir a operação.');
+  if(!response.ok){const error=new Error(data.error||'Não foi possível concluir a operação.');error.status=response.status;throw error}
   return data;
 }
 
@@ -39,8 +39,8 @@ async function loadConversations({silent=false}={}){
       const unanswered=row.ultimo_tipo_remetente==='CLIENTE'&&row.status!=='SERVICO_FINALIZADO';
       const canClaim=!row.atendente_id||row.atendente_id===state.user.id||state.user.perfil==='ADMINISTRADOR';
       return `<article data-id="${row.id}" class="attendance-card ${unanswered?'unanswered':''} ${row.id===state.currentConversation?'active':''}" ${row.id===state.currentConversation?'aria-current="true"':''}><div><h2>Atendimento #${row.numero_atendimento} · ${escapeHtml(row.nome_cliente)}</h2><p>${escapeHtml(row.telefone)} · atualizado em ${formatDate(row.atualizado_em)}</p><p>${row.atendente_nome?`Responsável: ${escapeHtml(row.atendente_nome)}`:'Na fila · aguardando atendente'}</p><p>${row.detalhes_servico?escapeHtml(row.detalhes_servico):'Sem detalhes de serviço informados'} · ${formatMoney(row.valor_servico_centavos)}</p></div><div class="card-actions"><span class="status status-${String(row.status||'').toLowerCase()}">${unanswered?'● Não respondida · ':''}${labels[row.status]||escapeHtml(row.status)}</span>${canClaim&&row.atendente_id!==state.user.id?`<button class="claim-button" data-claim="${row.id}">${state.user.perfil==='ADMINISTRADOR'&&row.atendente_id?'Transferir para mim':'Assumir atendimento'}</button>`:''}</div></article>`;
-    }).join(''):'<div class="empty">Nenhum atendimento neste filtro.</div>';state.queueSignature=signature;applySearchFilter()}
-  }catch(error){if(!silent){list.innerHTML='';showError(error)}if(error.message.includes('Sessão')){stopLiveUpdates();dashboard.hidden=true;loginView.hidden=false;state.user=null}}
+    }).join(''):'<div class="empty">Nenhum atendimento neste filtro.</div>';state.queueSignature=signature;applySearchFilter()}return true
+  }catch(error){if(!silent){list.innerHTML='';showError(error)}if(error.status===401||error.message.includes('Sessão')){stopLiveUpdates();dashboard.hidden=true;loginView.hidden=false;state.user=null}return false}
   finally{state.queueLoading=false}
 }
 
@@ -127,3 +127,5 @@ $('#new-user').addEventListener('click',()=>openUserModal());$('#close-user').ad
 $('#user-form').addEventListener('submit',async event=>{event.preventDefault();const values=Object.fromEntries(new FormData(event.currentTarget));values.ativo=event.currentTarget.elements.ativo.checked;const editing=Boolean(values.id),button=event.currentTarget.querySelector('button[type=submit]');button.disabled=true;$('#user-message').textContent='';try{await api('/api/admin/users',{method:editing?'PATCH':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});$('#user-modal').hidden=true;await loadUsers();state.staff=[]}catch(error){$('#user-message').textContent=error.message}finally{button.disabled=false}});
 document.querySelectorAll('.modal').forEach(modal=>modal.addEventListener('click',event=>{if(event.target===modal)modal.hidden=true}));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user){loadConversations({silent:true});if(state.currentConversation)openConversation(state.currentConversation,{initial:false,silent:true})}});
+async function restoreSession(){const restored=await loadConversations({silent:true});if(restored&&state.user){loginView.hidden=true;dashboard.hidden=false;startLiveUpdates()}else{dashboard.hidden=true;loginView.hidden=false}}
+restoreSession();
