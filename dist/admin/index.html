@@ -9,7 +9,12 @@
 </head>
 <body>
   <main class="admin-shell">
-    <section id="login-view" class="login-card">
+    <section id="session-loading" class="login-card session-loading" aria-live="polite">
+      <img class="admin-brand-logo" src="/assets/brand/jll-horizontal-color.svg" width="1000" height="300" alt="JLL Montagens">
+      <div class="session-loading-indicator" aria-hidden="true"></div>
+      <p>Carregando sua central de atendimento…</p>
+    </section>
+    <section id="login-view" class="login-card" hidden>
       <img class="admin-brand-logo" src="/assets/brand/jll-horizontal-color.svg" width="1000" height="300" alt="JLL Montagens - Sua mobília, nossa montagem.">
       <h1>Central de atendimento</h1><p>Organize conversas, equipes e orçamentos em um só lugar.</p>
       <form id="login-form"><label>Login<input name="login" type="text" autocomplete="username" required></label><label>Senha<input name="senha" type="password" autocomplete="current-password" required></label><button type="submit">Entrar</button><p id="login-error" class="error" role="alert"></p></form>
