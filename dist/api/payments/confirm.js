@@ -20,7 +20,7 @@ module.exports=async function handler(req,res){
       await sql`UPDATE orcamentos SET provedor_pagamento=COALESCE(${provedor},provedor_pagamento),id_pagamento_externo=COALESCE(${idPagamentoExterno},id_pagamento_externo),link_pagamento=COALESCE(${linkPagamento},link_pagamento),atualizado_em=NOW() WHERE id=${quote.id}`;
       return res.status(200).json({ok:true,finalizado:false});
     }
-    await sql`UPDATE orcamentos SET status_orcamento='FINALIZADO',status_pag_cliente='PAGO',origem_pagamento_cliente='LINK',provedor_pagamento=COALESCE(${provedor},provedor_pagamento),id_pagamento_externo=COALESCE(${idPagamentoExterno},id_pagamento_externo),link_pagamento=COALESCE(${linkPagamento},link_pagamento),pago_cliente_em=COALESCE(pago_cliente_em,NOW()),atualizado_em=NOW() WHERE id=${quote.id}`;
+    await sql`UPDATE orcamentos SET status_orcamento='FINALIZADO',status_pag_cliente='PAGO',origem_pagamento_cliente='LINK',provedor_pagamento=COALESCE(${provedor},provedor_pagamento),id_pagamento_externo=COALESCE(${idPagamentoExterno},id_pagamento_externo),link_pagamento=COALESCE(${linkPagamento},link_pagamento),pago_cliente_em=COALESCE(pago_cliente_em,NOW()),finalizado_em=COALESCE(finalizado_em,NOW()),atualizado_em=NOW() WHERE id=${quote.id}`;
     await sql`UPDATE atendimentos SET status='SERVICO_FINALIZADO',encerrado_em=COALESCE(encerrado_em,NOW()),atualizado_em=NOW() WHERE id=${quote.atendimento_id}`;
     await sql`INSERT INTO eventos_atendimento (atendimento_id,tipo_evento,detalhes) VALUES (${quote.atendimento_id},'PAGAMENTO_CLIENTE_CONFIRMADO',${JSON.stringify({orcamentoId:quote.id,provedor,idPagamentoExterno,origem:'LINK'})}::jsonb)`;
     return res.status(200).json({ok:true,finalizado:true});

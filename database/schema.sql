@@ -102,6 +102,8 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   link_pagamento TEXT,
   pago_cliente_em TIMESTAMPTZ,
   pago_montador_em TIMESTAMPTZ,
+  finalizado_em TIMESTAMPTZ,
+  montador_alterado_em TIMESTAMPTZ,
   agendado_para TIMESTAMPTZ NOT NULL,
   endereco TEXT NOT NULL,
   referencia TEXT,
@@ -116,3 +118,21 @@ CREATE INDEX IF NOT EXISTS orcamentos_agendamento_idx
 
 CREATE INDEX IF NOT EXISTS orcamentos_status_pagamentos_idx
   ON orcamentos (status_pag_cliente, status_pg_montador, status_orcamento);
+
+CREATE INDEX IF NOT EXISTS orcamentos_datas_gestao_idx
+  ON orcamentos (criado_em, finalizado_em, montador_alterado_em, pago_montador_em);
+
+CREATE TABLE IF NOT EXISTS configuracoes_pagamento (
+  provedor TEXT PRIMARY KEY CHECK (provedor IN ('MERCADO_PAGO', 'PAGBANK', 'REDE')),
+  ativo BOOLEAN NOT NULL DEFAULT FALSE,
+  ambiente TEXT NOT NULL DEFAULT 'SANDBOX' CHECK (ambiente IN ('SANDBOX', 'PRODUCAO')),
+  usar_3ds BOOLEAN NOT NULL DEFAULT FALSE,
+  configuracao_publica JSONB NOT NULL DEFAULT '{}'::jsonb,
+  segredos_criptografados TEXT,
+  ultimo_teste_em TIMESTAMPTZ,
+  ultimo_teste_ok BOOLEAN,
+  ultimo_teste_mensagem TEXT,
+  atualizado_por UUID REFERENCES usuarios_atendimento(id),
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

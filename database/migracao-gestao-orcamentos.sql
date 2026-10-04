@@ -45,6 +45,8 @@ ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS id_pagamento_externo TEXT;
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS link_pagamento TEXT;
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS pago_cliente_em TIMESTAMPTZ;
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS pago_montador_em TIMESTAMPTZ;
+ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS finalizado_em TIMESTAMPTZ;
+ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS montador_alterado_em TIMESTAMPTZ;
 
 ALTER TABLE orcamentos DROP CONSTRAINT IF EXISTS orcamentos_status_orcamento_check;
 ALTER TABLE orcamentos ADD CONSTRAINT orcamentos_status_orcamento_check
@@ -79,7 +81,33 @@ SET valor_montador = ROUND(o.valor * COALESCE(m.percentual_repasse, 0) / 100, 2)
 FROM montadores m
 WHERE m.id = o.montador_id AND o.valor_montador = 0;
 
+UPDATE orcamentos
+SET finalizado_em = COALESCE(finalizado_em, pago_cliente_em, atualizado_em)
+WHERE status_orcamento = 'FINALIZADO' AND finalizado_em IS NULL;
+
+UPDATE orcamentos
+SET montador_alterado_em = COALESCE(montador_alterado_em, atualizado_em, criado_em)
+WHERE montador_id IS NOT NULL AND montador_alterado_em IS NULL;
+
 CREATE INDEX IF NOT EXISTS orcamentos_status_pagamentos_idx
   ON orcamentos (status_pag_cliente, status_pg_montador, status_orcamento);
+
+CREATE INDEX IF NOT EXISTS orcamentos_datas_gestao_idx
+  ON orcamentos (criado_em, finalizado_em, montador_alterado_em, pago_montador_em);
+
+CREATE TABLE IF NOT EXISTS configuracoes_pagamento (
+  provedor TEXT PRIMARY KEY CHECK (provedor IN ('MERCADO_PAGO', 'PAGBANK', 'REDE')),
+  ativo BOOLEAN NOT NULL DEFAULT FALSE,
+  ambiente TEXT NOT NULL DEFAULT 'SANDBOX' CHECK (ambiente IN ('SANDBOX', 'PRODUCAO')),
+  usar_3ds BOOLEAN NOT NULL DEFAULT FALSE,
+  configuracao_publica JSONB NOT NULL DEFAULT '{}'::jsonb,
+  segredos_criptografados TEXT,
+  ultimo_teste_em TIMESTAMPTZ,
+  ultimo_teste_ok BOOLEAN,
+  ultimo_teste_mensagem TEXT,
+  atualizado_por UUID REFERENCES usuarios_atendimento(id),
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 COMMIT;

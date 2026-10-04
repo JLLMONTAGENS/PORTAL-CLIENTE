@@ -39,6 +39,8 @@ Em uma base já existente, execute `database/migracao-gestao-orcamentos.sql` ant
 - adiciona os status do orçamento, do pagamento do cliente e do pagamento do montador;
 - adiciona repasse calculado, adicional do montador e percentual de repasse no cadastro do montador;
 - prepara os campos de provedor, identificador externo e link de pagamento.
+- registra separadamente as datas de inclusão, finalização, alteração do montador e pagamento do montador;
+- cria a tabela `configuracoes_pagamento` para Mercado Pago, PagBank/PagSeguro e Rede.
 
 Os status financeiros são:
 
@@ -47,3 +49,28 @@ Os status financeiros são:
 - pagamento do montador: `PENDENTE`, `PAGO`.
 
 Para futuras integrações, configure `PAYMENT_WEBHOOK_SECRET`. O endpoint `POST /api/payments/confirm` aceita confirmações autenticadas pelo cabeçalho `x-jll-payment-secret`. Ao receber `status: "PAGO"`, ele marca o pagamento do cliente e finaliza o atendimento de forma idempotente.
+
+## Configuração dos meios de pagamento
+
+Além de `PAYMENT_WEBHOOK_SECRET`, configure na Vercel a variável privada `PAYMENT_CONFIG_ENCRYPTION_KEY` com pelo menos 32 caracteres aleatórios. Ela é usada para criptografar tokens e chaves com AES-256-GCM antes de gravá-los no banco. Não troque essa variável sem antes migrar as credenciais já armazenadas.
+
+Depois de executar `database/migracao-gestao-orcamentos.sql`, o administrador terá o menu **Pagamentos** para:
+
+- escolher homologação ou produção;
+- ativar Mercado Pago, PagBank/PagSeguro ou Rede;
+- informar credenciais e URLs de retorno/notificação;
+- testar as credenciais sem criar uma cobrança;
+- indicar o uso de 3DS quando o fluxo e o contrato do provedor permitirem.
+
+Mercado Pago e PagBank usam checkout hospedado e podem gerar o link diretamente na gestão do orçamento. O valor permanece no banco como `NUMERIC(18,2)`; a conversão para centavos exigida pelo PagBank acontece somente na chamada externa.
+
+A Rede utiliza checkout direto. A conexão OAuth pode ser cadastrada e testada, mas a captura de cartão deve permanecer desabilitada até a conclusão do credenciamento, da certificação e dos requisitos PCI/3DS junto à adquirente. O sistema não armazena dados de cartão.
+
+Configure as URLs públicas de notificação como:
+
+- Mercado Pago: `https://SEU-DOMINIO/api/payments/mercado-pago`;
+- PagBank: `https://SEU-DOMINIO/api/payments/pagbank`.
+
+As rotas consultam novamente a API do provedor antes de confirmar o pagamento. No Mercado Pago, quando o segredo de webhook estiver cadastrado, a assinatura `x-signature` também é validada. Somente os estados `approved` (Mercado Pago) e `PAID` (PagBank) finalizam o atendimento.
+
+O endpoint genérico `POST /api/payments/confirm` continua disponível para a confirmação assinada por um intermediário confiável. Antes da entrada em produção, execute a homologação completa com credenciais reais de sandbox e depois de produção.
