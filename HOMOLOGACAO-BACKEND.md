@@ -108,3 +108,16 @@ Os arquivos da interface usam estratégia online-first: quando há internet, o a
 - APK Android criado com login e navegação dentro do aplicativo;
 - atualização incremental das mensagens implementada, eliminando o efeito de refresh;
 - visualizador responsivo de imagens implementado para uso mobile.
+
+## Evolução de 04/10/2026 — aplicativo compacto, desempenho e atribuição interna
+
+- O modo aplicativo (`/admin?app=1`) usa cabeçalho reduzido, identificação compacta do usuário e botão de saída discreto.
+- As classificações de atendimento aparecem como chips horizontais roláveis, seguindo o padrão de navegação de aplicativos de mensagens.
+- As filas são mantidas em cache durante a sessão e pré-carregadas em segundo plano. Ao tocar em um status já visitado, a lista aparece imediatamente e é atualizada silenciosamente pela API.
+- As primeiras conversas visíveis também são pré-carregadas. A conversa abre com o conteúdo em cache e valida dados novos em segundo plano, reduzindo a espera percebida.
+- A API de filas aceita `summary=0` para pré-carregamento leve, sem repetir as consultas de totalização. As totalizações continuam sendo atualizadas pelo carregamento normal.
+- O responsável pelo atendimento ou um administrador pode atribuir, trocar ou remover o montador diretamente na conversa, após a geração do orçamento.
+- A rota interna é `POST /api/admin/assign-assembler`, com `atendimentoId` e `montadorId` (vazio remove a atribuição).
+- A atribuição recalcula o valor-base do montador pelo percentual cadastrado, atualiza os status do orçamento e atendimento e registra um evento de auditoria.
+- Regra de privacidade operacional: atribuir ou trocar o montador **não cria mensagem no chat do cliente**. Mesmo quando o orçamento já nasce com montador, o resumo enviado ao cliente não informa nome, percentual ou valor do montador.
+- O aplicativo do montador, com eventos como “a caminho do cliente”, permanece no roadmap. Esse evento futuramente poderá gerar uma atualização visível ao cliente, mas não faz parte desta entrega.

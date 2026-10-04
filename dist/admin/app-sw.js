@@ -1,4 +1,4 @@
-const CACHE='jll-atendimento-v2';
+const CACHE='jll-atendimento-v3';
 const SHELL=['/admin/','/admin/admin.css','/admin/admin-v2.js','/admin/app.webmanifest','/assets/brand/jll-favicon.svg','/assets/brand/jll-horizontal-color.svg','/assets/brand/jll-horizontal-reverse.svg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim()});

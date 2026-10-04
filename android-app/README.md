@@ -18,3 +18,13 @@ A interface web carregada pelo APK faz atualização incremental das mensagens. 
 Imagens são abertas em um visualizador interno responsivo, limitado ao tamanho da tela e com fechamento acessível. Como esses recursos são servidos pela homologação, melhorias na conversa entram no APK após o deploy web, sem exigir uma nova compilação nativa.
 
 Para reconstruir, execute `powershell -ExecutionPolicy Bypass -File .\android-app\build-apk.ps1` na raiz do projeto. A chave gerada é exclusivamente de depuração e não deve ser usada para publicação na Google Play.
+
+## Interface compacta e desempenho — 04/10/2026
+
+- O APK continua usando a mesma autenticação da plataforma, dentro do próprio aplicativo.
+- No modo aplicativo, o cabeçalho foi reduzido e o botão de saída passou a ser um ícone discreto.
+- As filas de atendimento são apresentadas como chips horizontais roláveis, semelhantes às classificações de conversas em mensageiros.
+- Filas e conversas próximas são pré-carregadas em segundo plano para reduzir o tempo percebido ao navegar.
+- As ações menos frequentes ficam recolhidas em “Ações do atendimento”, liberando mais espaço vertical para as mensagens.
+- A atribuição de montador na conversa é uma operação interna e nunca envia uma nova mensagem ao cliente.
+- Notificações push e o futuro aplicativo exclusivo do montador continuam fora desta versão.
