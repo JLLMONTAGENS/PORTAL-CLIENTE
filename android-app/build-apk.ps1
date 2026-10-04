@@ -22,14 +22,15 @@ $generated = Join-Path $build 'generated'
 $classes = Join-Path $build 'classes'
 $dex = Join-Path $build 'dex'
 $output = Join-Path $PSScriptRoot 'output'
+$signing = Join-Path $PSScriptRoot 'signing'
 if (Test-Path -LiteralPath $build) { Remove-Item -LiteralPath $build -Recurse -Force }
-New-Item -ItemType Directory -Force -Path $compiled,$generated,$classes,$dex,$output | Out-Null
+New-Item -ItemType Directory -Force -Path $compiled,$generated,$classes,$dex,$output,$signing | Out-Null
 
 & $aapt2 compile --dir (Join-Path $PSScriptRoot 'res') -o (Join-Path $compiled 'resources.zip')
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar recursos Android.' }
 
 $unsignedApk = Join-Path $build 'jll-atendimento-unsigned.apk'
-& $aapt2 link -o $unsignedApk -I $androidJar --manifest (Join-Path $PSScriptRoot 'AndroidManifest.xml') --java $generated --min-sdk-version 24 --target-sdk-version 34 --version-code 1 --version-name '1.0.0' --auto-add-overlay -R (Join-Path $compiled 'resources.zip')
+& $aapt2 link -o $unsignedApk -I $androidJar --manifest (Join-Path $PSScriptRoot 'AndroidManifest.xml') --java $generated --min-sdk-version 24 --target-sdk-version 34 --version-code 2 --version-name '1.0.1' --auto-add-overlay -R (Join-Path $compiled 'resources.zip')
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao vincular recursos Android.' }
 
 $javaSources = @((Join-Path $PSScriptRoot 'src\br\com\jllmontagens\atendimento\MainActivity.java')) + @(Get-ChildItem -LiteralPath $generated -Recurse -Filter '*.java' | Select-Object -ExpandProperty FullName)
@@ -49,11 +50,13 @@ $alignedApk = Join-Path $build 'jll-atendimento-aligned.apk'
 & $zipalign -f 4 $unsignedApk $alignedApk
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao alinhar o APK.' }
 
-$keystore = Join-Path $build 'jll-debug.keystore'
-& $keytool -genkeypair -v -keystore $keystore -storepass android -alias androiddebugkey -keypass android -dname 'CN=JLL Montagens Debug,OU=Atendimento,O=JLL Montagens,L=Rio de Janeiro,ST=RJ,C=BR' -keyalg RSA -keysize 2048 -validity 3650
-if ($LASTEXITCODE -ne 0) { throw 'Falha ao criar a assinatura de teste.' }
+$keystore = Join-Path $signing 'jll-debug.keystore'
+if (-not (Test-Path -LiteralPath $keystore)) {
+    & $keytool -genkeypair -v -keystore $keystore -storepass android -alias androiddebugkey -keypass android -dname 'CN=JLL Montagens Debug,OU=Atendimento,O=JLL Montagens,L=Rio de Janeiro,ST=RJ,C=BR' -keyalg RSA -keysize 2048 -validity 3650
+    if ($LASTEXITCODE -ne 0) { throw 'Falha ao criar a assinatura de teste.' }
+}
 
-$finalApk = Join-Path $output 'JLL-Atendimento-homologacao.apk'
+$finalApk = Join-Path $output 'JLL-Atendimento-homologacao-v1.0.1.apk'
 & $apksigner sign --ks $keystore --ks-pass pass:android --key-pass pass:android --out $finalApk $alignedApk
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao assinar o APK.' }
 & $apksigner verify --verbose --print-certs $finalApk

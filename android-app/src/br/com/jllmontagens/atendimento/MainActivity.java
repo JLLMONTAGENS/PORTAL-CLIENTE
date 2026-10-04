@@ -19,7 +19,6 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
     private static final String APP_URL = "https://portal-cliente-git-homologacao-jean-melo.vercel.app/admin/?app=1";
-    private static final String APP_HOST = "portal-cliente-git-homologacao-jean-melo.vercel.app";
     private static final int FILE_CHOOSER_REQUEST = 4107;
     private WebView webView;
     private ValueCallback<Uri[]> fileChooserCallback;
@@ -42,17 +41,27 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setSupportMultipleWindows(false);
+        settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setUserAgentString(settings.getUserAgentString() + " JLLAtendimentoApp/1.0");
 
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
-        cookies.setAcceptThirdPartyCookies(webView, false);
+        cookies.setAcceptThirdPartyCookies(webView, true);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri url = request.getUrl();
-                if ("https".equalsIgnoreCase(url.getScheme()) && APP_HOST.equalsIgnoreCase(url.getHost())) return false;
+                String host = url.getHost() == null ? "" : url.getHost().toLowerCase();
+                if (isPaymentProvider(host)) {
+                    openExternal(url);
+                    return true;
+                }
+                if ("https".equalsIgnoreCase(url.getScheme()) || "http".equalsIgnoreCase(url.getScheme())) {
+                    view.loadUrl(url.toString());
+                    return true;
+                }
                 openExternal(url);
                 return true;
             }
@@ -88,6 +97,14 @@ public class MainActivity extends Activity {
         } catch (ActivityNotFoundException error) {
             Toast.makeText(this, "Não foi possível abrir este link.", Toast.LENGTH_LONG).show();
         }
+    }
+
+    private boolean isPaymentProvider(String host) {
+        return host.endsWith("mercadopago.com")
+                || host.endsWith("mercadopago.com.br")
+                || host.endsWith("pagseguro.com.br")
+                || host.endsWith("pagbank.com.br")
+                || host.endsWith("userede.com.br");
     }
 
     @Override

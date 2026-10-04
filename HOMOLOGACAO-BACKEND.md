@@ -83,3 +83,28 @@ O painel também disponibiliza uma aplicação web instalável (PWA) para iOS e 
 - iPhone/iPad/Safari: use **Compartilhar → Adicionar à Tela de Início**.
 
 No aplicativo permanecem disponíveis a fila em tempo real, conversa, anexos, transferência, geração e atualização de orçamento, geração de link de pagamento e finalização. Usuários, gestão geral de orçamentos e configuração de pagamentos continuam exclusivos do navegador.
+
+## Experiência de mensageria
+
+O atendimento segue o comportamento esperado de aplicativos como WhatsApp e Telegram:
+
+- ao enviar, a mensagem aparece imediatamente com o indicador **Enviando…**;
+- a confirmação do servidor atualiza apenas a própria mensagem, sem reconstruir a conversa;
+- mensagens novas recebidas são acrescentadas ao histórico sem atualizar a tela inteira;
+- quando o atendente está no fim da conversa, a rolagem acompanha suavemente a mensagem nova;
+- quando está lendo o histórico, sua posição é preservada e a seta de mensagem recente fica disponível;
+- mensagens não são duplicadas caso a atualização automática aconteça durante um envio mais lento;
+- imagens abrem em um visualizador interno, contido na tela, com botão de fechar, fechamento ao tocar no fundo e suporte à tecla `Esc` no navegador.
+
+Essas regras são compartilhadas pelo painel web, pela PWA e pelo APK, pois todos utilizam a mesma interface de atendimento publicada na homologação.
+
+Os arquivos da interface usam estratégia online-first: quando há internet, o aplicativo busca a versão mais recente publicada; o cache é usado apenas como contingência. Assim, correções de conversa chegam ao APK sem reinstalação depois do deploy.
+
+## Registro de evolução — 04/10/2026
+
+- filtros de datas dos orçamentos adaptados para desktop, tablet e celular;
+- link de pagamento disponibilizado diretamente na conversa do atendente;
+- PWA de atendimento criada para iOS e Android;
+- APK Android criado com login e navegação dentro do aplicativo;
+- atualização incremental das mensagens implementada, eliminando o efeito de refresh;
+- visualizador responsivo de imagens implementado para uso mobile.
