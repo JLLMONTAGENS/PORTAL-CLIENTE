@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS montadores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT NOT NULL,
   telefone TEXT,
+  percentual_repasse NUMERIC(5,2) NOT NULL DEFAULT 0 CHECK (percentual_repasse >= 0 AND percentual_repasse <= 100),
   ativo BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS atendimentos (
   atendente_id UUID REFERENCES usuarios_atendimento(id),
   detalhes_servico TEXT,
   agendado_para TIMESTAMPTZ,
-  valor_servico_centavos INTEGER CHECK (valor_servico_centavos IS NULL OR valor_servico_centavos >= 0),
+  valor_servico NUMERIC(18,2) CHECK (valor_servico IS NULL OR valor_servico >= 0),
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   encerrado_em TIMESTAMPTZ
@@ -89,7 +90,18 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   telefone_cliente TEXT NOT NULL,
   telefone_alternativo TEXT,
   descricao_servico TEXT NOT NULL,
-  valor_centavos INTEGER NOT NULL CHECK (valor_centavos >= 0),
+  valor NUMERIC(18,2) NOT NULL CHECK (valor >= 0),
+  status_orcamento TEXT NOT NULL DEFAULT 'GERADO' CHECK (status_orcamento IN ('GERADO', 'MONTADOR_ATRIBUIDO', 'FINALIZADO')),
+  status_pag_cliente TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status_pag_cliente IN ('PENDENTE', 'PAGO')),
+  status_pg_montador TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status_pg_montador IN ('PENDENTE', 'PAGO')),
+  valor_montador NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (valor_montador >= 0),
+  adicional_montador NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (adicional_montador >= 0),
+  origem_pagamento_cliente TEXT CHECK (origem_pagamento_cliente IS NULL OR origem_pagamento_cliente IN ('MANUAL', 'LINK')),
+  provedor_pagamento TEXT,
+  id_pagamento_externo TEXT,
+  link_pagamento TEXT,
+  pago_cliente_em TIMESTAMPTZ,
+  pago_montador_em TIMESTAMPTZ,
   agendado_para TIMESTAMPTZ NOT NULL,
   endereco TEXT NOT NULL,
   referencia TEXT,
@@ -101,3 +113,6 @@ CREATE TABLE IF NOT EXISTS orcamentos (
 
 CREATE INDEX IF NOT EXISTS orcamentos_agendamento_idx
   ON orcamentos (agendado_para ASC);
+
+CREATE INDEX IF NOT EXISTS orcamentos_status_pagamentos_idx
+  ON orcamentos (status_pag_cliente, status_pg_montador, status_orcamento);

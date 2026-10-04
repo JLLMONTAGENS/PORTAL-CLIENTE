@@ -29,3 +29,21 @@ Para uma base que já está em uso, execute `database/migracao-usuarios-orcament
 - pode ser executada novamente sem duplicar estruturas.
 
 Depois da migração, o administrador pode ajustar o login e os demais dados pelo menu **Usuários** do painel.
+
+## Gestão financeira dos orçamentos
+
+Em uma base já existente, execute `database/migracao-gestao-orcamentos.sql` antes de publicar a versão com o menu **Orçamentos**. A migração:
+
+- converte `valor_centavos` para `valor NUMERIC(18,2)`, preservando `50000` como `500.00`;
+- converte `valor_servico_centavos` para `valor_servico NUMERIC(18,2)`;
+- adiciona os status do orçamento, do pagamento do cliente e do pagamento do montador;
+- adiciona repasse calculado, adicional do montador e percentual de repasse no cadastro do montador;
+- prepara os campos de provedor, identificador externo e link de pagamento.
+
+Os status financeiros são:
+
+- orçamento: `GERADO`, `MONTADOR_ATRIBUIDO`, `FINALIZADO`;
+- pagamento do cliente: `PENDENTE`, `PAGO`;
+- pagamento do montador: `PENDENTE`, `PAGO`.
+
+Para futuras integrações, configure `PAYMENT_WEBHOOK_SECRET`. O endpoint `POST /api/payments/confirm` aceita confirmações autenticadas pelo cabeçalho `x-jll-payment-secret`. Ao receber `status: "PAGO"`, ele marca o pagamento do cliente e finaliza o atendimento de forma idempotente.
