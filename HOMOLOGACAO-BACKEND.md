@@ -121,3 +121,10 @@ Os arquivos da interface usam estratégia online-first: quando há internet, o a
 - A atribuição recalcula o valor-base do montador pelo percentual cadastrado, atualiza os status do orçamento e atendimento e registra um evento de auditoria.
 - Regra de privacidade operacional: atribuir ou trocar o montador **não cria mensagem no chat do cliente**. Mesmo quando o orçamento já nasce com montador, o resumo enviado ao cliente não informa nome, percentual ou valor do montador.
 - O aplicativo do montador, com eventos como “a caminho do cliente”, permanece no roadmap. Esse evento futuramente poderá gerar uma atualização visível ao cliente, mas não faz parte desta entrega.
+## Navegação de finalizados e status no aplicativo — 04/10/2026
+
+- `Serviço finalizado` deixou de ser um filtro da fila operacional de atendimentos.
+- No navegador, os registros encerrados ficam no menu independente **Atendimentos finalizados**, mantendo a mesma busca, abertura do histórico e atualização em tempo real.
+- O menu **Atendimentos finalizados** não é exibido no modo aplicativo (`?app=1`).
+- No APK, os quatro status operacionais permanecem obrigatoriamente em uma única linha, com rolagem horizontal por toque, sem quebra para uma segunda linha.
+- O botão de saída usa um ícone vetorial de porta e seta, com contraste próprio para fundos escuros.

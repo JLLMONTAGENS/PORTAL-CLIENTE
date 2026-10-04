@@ -28,3 +28,9 @@ Para reconstruir, execute `powershell -ExecutionPolicy Bypass -File .\android-ap
 - As ações menos frequentes ficam recolhidas em “Ações do atendimento”, liberando mais espaço vertical para as mensagens.
 - A atribuição de montador na conversa é uma operação interna e nunca envia uma nova mensagem ao cliente.
 - Notificações push e o futuro aplicativo exclusivo do montador continuam fora desta versão.
+## Barra de status e saída — 04/10/2026
+
+- A barra de status do APK contém apenas: Não respondidas, Pendentes, Orçamento gerado e Montador atribuído.
+- Os status ficam em uma única linha e podem ser percorridos horizontalmente com o gesto de arrastar.
+- Atendimentos finalizados são acessíveis somente pelo menu próprio da versão web e não aparecem no APK.
+- O cabeçalho apresenta um ícone vetorial visível para a ação de sair.

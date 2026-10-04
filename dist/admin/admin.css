@@ -58,3 +58,14 @@ select,textarea{width:100%;border:1px solid #cfded9;border-radius:10px;padding:1
   .app-mode .conversation-tools>summary{padding:7px 9px;font-size:.68rem}.app-mode .conversation-actions{gap:5px}.app-mode .conversation-actions button,.app-mode .conversation-actions select{min-height:36px;padding:7px 8px;font-size:.68rem}
   .app-mode .conversation-messages{height:calc(100dvh - 190px);min-height:340px;padding:10px}.app-mode .conversation-form{padding:8px;padding-bottom:max(8px,env(safe-area-inset-bottom))}.app-mode .conversation-form input{padding:10px}.app-mode .conversation-form button{padding:9px 12px}
 }
+/* Ajustes de navegação: saída, finalizados e barra horizontal */
+#logout{display:inline-flex;align-items:center;justify-content:center;gap:7px}.logout-icon{display:block;width:18px;height:18px;fill:currentColor;flex:0 0 auto}.finished-attendances .status-sidebar{display:none}.finished-attendances .admin-layout{grid-template-columns:minmax(300px,390px) minmax(420px,1fr)}
+@media(max-width:800px){
+  .finished-attendances .admin-layout{display:block}
+  .app-mode #finished-menu{display:none!important}
+  .app-mode .status-sidebar{width:100%;max-width:100vw;min-width:0;overflow:hidden}
+  .app-mode .filters{display:flex!important;width:100%;max-width:100%;grid-template-columns:none!important;flex-flow:row nowrap!important;gap:6px;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap;touch-action:pan-x;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+  .app-mode .filter{display:inline-flex!important;flex:0 0 auto!important;width:auto!important;min-width:max-content;scroll-snap-align:start}
+  .app-mode #logout{display:grid!important;width:36px;height:36px;padding:0!important;place-items:center;border:1px solid rgba(255,255,255,.42)!important;border-radius:50%;background:rgba(4,19,42,.72)!important;color:#fff!important;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .app-mode #logout::before{content:none!important}.app-mode #logout span{display:none}.app-mode #logout .logout-icon{width:19px;height:19px;color:#fff;fill:#fff}
+}
