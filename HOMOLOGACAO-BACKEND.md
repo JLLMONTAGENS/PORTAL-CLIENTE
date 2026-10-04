@@ -74,3 +74,12 @@ Configure as URLs públicas de notificação como:
 As rotas consultam novamente a API do provedor antes de confirmar o pagamento. No Mercado Pago, quando o segredo de webhook estiver cadastrado, a assinatura `x-signature` também é validada. Somente os estados `approved` (Mercado Pago) e `PAID` (PagBank) finalizam o atendimento.
 
 O endpoint genérico `POST /api/payments/confirm` continua disponível para a confirmação assinada por um intermediário confiável. Antes da entrada em produção, execute a homologação completa com credenciais reais de sandbox e depois de produção.
+
+## Aplicativo de atendimento
+
+O painel também disponibiliza uma aplicação web instalável (PWA) para iOS e Android. Ela reutiliza o mesmo login e as mesmas APIs do painel, mas o modo instalado abre somente a operação de **Atendimentos**.
+
+- Android/Chrome: use o botão **Instalar app** exibido no painel ou a opção de instalação do navegador.
+- iPhone/iPad/Safari: use **Compartilhar → Adicionar à Tela de Início**.
+
+No aplicativo permanecem disponíveis a fila em tempo real, conversa, anexos, transferência, geração e atualização de orçamento, geração de link de pagamento e finalização. Usuários, gestão geral de orçamentos e configuração de pagamentos continuam exclusivos do navegador.
