@@ -34,3 +34,8 @@ Para reconstruir, execute `powershell -ExecutionPolicy Bypass -File .\android-ap
 - Os status ficam em uma única linha e podem ser percorridos horizontalmente com o gesto de arrastar.
 - Atendimentos finalizados são acessíveis somente pelo menu próprio da versão web e não aparecem no APK.
 - O cabeçalho apresenta um ícone vetorial visível para a ação de sair.
+## Endereço segmentado no orçamento — 05/10/2026
+
+- O formulário de orçamento no aplicativo exige Endereço completo, Bairro e Cidade em campos separados.
+- O resumo enviado ao cliente apresenta esses dados separadamente e mantém a Referência como último campo de localização.
+- Orçamentos antigos sem bairro/cidade exigirão o preenchimento desses campos na próxima atualização.

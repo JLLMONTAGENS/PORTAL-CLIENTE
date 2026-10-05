@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   adicional_montador NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (adicional_montador >= 0),
   agendado_para TIMESTAMPTZ NOT NULL,
   endereco TEXT NOT NULL,
+  bairro TEXT NOT NULL,
+  cidade TEXT NOT NULL,
   referencia TEXT,
   montador_id UUID REFERENCES montadores(id),
   gerado_por UUID NOT NULL REFERENCES usuarios_atendimento(id),

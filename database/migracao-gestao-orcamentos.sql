@@ -47,6 +47,8 @@ ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS pago_cliente_em TIMESTAMPTZ;
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS pago_montador_em TIMESTAMPTZ;
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS finalizado_em TIMESTAMPTZ;
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS montador_alterado_em TIMESTAMPTZ;
+ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS bairro TEXT;
+ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS cidade TEXT;
 
 ALTER TABLE orcamentos DROP CONSTRAINT IF EXISTS orcamentos_status_orcamento_check;
 ALTER TABLE orcamentos ADD CONSTRAINT orcamentos_status_orcamento_check
@@ -109,5 +111,8 @@ CREATE TABLE IF NOT EXISTS configuracoes_pagamento (
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS orcamentos_cidade_bairro_idx
+  ON orcamentos (LOWER(cidade), LOWER(bairro));
 
 COMMIT;

@@ -128,3 +128,12 @@ Os arquivos da interface usam estratégia online-first: quando há internet, o a
 - O menu **Atendimentos finalizados** não é exibido no modo aplicativo (`?app=1`).
 - No APK, os quatro status operacionais permanecem obrigatoriamente em uma única linha, com rolagem horizontal por toque, sem quebra para uma segunda linha.
 - O botão de saída usa um ícone vetorial de porta e seta, com contraste próprio para fundos escuros.
+## Segmentação de endereço dos orçamentos — 05/10/2026
+
+- O orçamento possui agora as colunas independentes `endereco`, `bairro` e `cidade`.
+- Novos orçamentos e atualizações exigem o preenchimento de bairro e cidade no formulário do atendente.
+- Orçamentos existentes permanecem válidos com os novos campos nulos; ao serem editados, deverão receber os dados segmentados.
+- A mensagem automática apresenta Endereço, Bairro e Cidade em campos separados tanto para o cliente quanto para o atendente.
+- A gestão administrativa exibe e pesquisa também por endereço, bairro e cidade.
+- Foi criado o índice `orcamentos_cidade_bairro_idx` para apoiar buscas e análises geográficas futuras.
+- Antes da publicação da API, executar `database/migracao-bairro-cidade-orcamentos.sql` no banco de homologação.

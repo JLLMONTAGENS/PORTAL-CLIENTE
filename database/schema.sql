@@ -106,6 +106,8 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   montador_alterado_em TIMESTAMPTZ,
   agendado_para TIMESTAMPTZ NOT NULL,
   endereco TEXT NOT NULL,
+  bairro TEXT NOT NULL,
+  cidade TEXT NOT NULL,
   referencia TEXT,
   montador_id UUID REFERENCES montadores(id),
   gerado_por UUID NOT NULL REFERENCES usuarios_atendimento(id),
@@ -115,6 +117,9 @@ CREATE TABLE IF NOT EXISTS orcamentos (
 
 CREATE INDEX IF NOT EXISTS orcamentos_agendamento_idx
   ON orcamentos (agendado_para ASC);
+
+CREATE INDEX IF NOT EXISTS orcamentos_cidade_bairro_idx
+  ON orcamentos (LOWER(cidade), LOWER(bairro));
 
 CREATE INDEX IF NOT EXISTS orcamentos_status_pagamentos_idx
   ON orcamentos (status_pag_cliente, status_pg_montador, status_orcamento);
