@@ -137,3 +137,19 @@ Os arquivos da interface usam estratégia online-first: quando há internet, o a
 - A gestão administrativa exibe e pesquisa também por endereço, bairro e cidade.
 - Foi criado o índice `orcamentos_cidade_bairro_idx` para apoiar buscas e análises geográficas futuras.
 - Antes da publicação da API, executar `database/migracao-bairro-cidade-orcamentos.sql` no banco de homologação.
+
+## Acompanhamento do cliente e anexos do atendente — 05/10/2026
+
+- O menu principal possui agora o acesso **Acompanhe seu atendimento**, disponível também no menu móvel.
+- A página pública fica em `/acompanhe-seu-atendimento/`. O cliente localiza o registro com o mesmo telefone informado no atendimento.
+- A consulta usa `POST /api/conversations/tracking` e retorna a conversa mais recente, priorizando atendimentos ainda abertos.
+- Quando há orçamento, serviço, valor, data agendada e endereço segmentado ficam destacados fora do histórico de mensagens. A data é apresentada sem horário.
+- A conversa continua interativa enquanto o atendimento estiver aberto e é atualizada silenciosamente a cada quatro segundos, sem recarregar a página.
+- O painel do atendente aceita imagens JPEG, PNG ou WebP e PDF de até 3 MB pela rota autenticada `POST /api/admin/attachment`. O limite considera o transporte em Base64 dentro da requisição serverless.
+- Anexos continuam privados no Vercel Blob e são entregues por `/api/conversations/attachment`, vinculados ao atendimento e à mensagem. PDFs são abertos em modo de leitura no navegador.
+- Somente o responsável pelo atendimento ou um administrador pode anexar arquivos; atendimentos finalizados não aceitam novos anexos. A API valida também a assinatura binária do arquivo, além do tipo informado pelo navegador.
+- A nova página foi marcada como `noindex`, pois o histórico do cliente não deve aparecer em mecanismos de busca.
+
+### Contrato preparado para o futuro aplicativo do montador
+
+A jornada já interpreta os eventos `MONTADOR_ATRIBUIDO`, `MONTADOR_A_CAMINHO`, `MONTADOR_CHEGOU` e `ATENDIMENTO_FINALIZADO` da tabela `eventos_atendimento`. Nesta etapa, apenas a atribuição e a finalização já são produzidas pelo sistema atual. O futuro aplicativo do montador deverá registrar os eventos de saída e chegada e, em uma etapa posterior, enviar localização autorizada para alimentar o mapa em tempo real. Nenhum dado financeiro interno ou valor de repasse do montador é exposto ao cliente.

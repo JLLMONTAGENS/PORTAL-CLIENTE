@@ -21,3 +21,19 @@ A central de atendimento web deve evoluir para um aplicativo para iOS e Android 
 3. Chat interno e abas por atendente.
 4. Atualização em tempo real e notificações.
 5. PWA instalável e, depois, aplicativo iOS/Android com a mesma API.
+
+## Portal de acompanhamento do cliente — 05/10/2026
+
+- Página responsiva para localizar o atendimento pelo telefone, consultar o orçamento destacado e interagir na conversa.
+- Linha do tempo visual preparada para orçamento/agendamento, profissional atribuído, deslocamento, chegada e conclusão.
+- Atualização automática sem recarregar a página e exibição de imagens e PDFs enviados pela equipe.
+- Próxima etapa do acompanhamento: autenticação reforçada por código de uso único (OTP) antes da produção definitiva.
+- Futura integração com o aplicativo do montador: registrar `MONTADOR_A_CAMINHO` e `MONTADOR_CHEGOU`, solicitar consentimento de localização e transmitir coordenadas temporárias somente durante o deslocamento.
+- O mapa em tempo real dependerá dessa futura origem de geolocalização; nesta entrega, a interface informa a etapa operacional e já aceita os eventos correspondentes.
+
+## Anexos na conversa
+
+- Cliente: envio de imagens JPEG, PNG e WebP.
+- Atendente: envio de imagens JPEG, PNG e WebP e documentos PDF.
+- Arquivos armazenados de forma privada e acessados pela mensagem correspondente.
+- Evolução futura: antivírus/antimalware assíncrono e política configurável de retenção dos anexos.

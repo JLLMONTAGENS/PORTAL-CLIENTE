@@ -39,3 +39,10 @@ Para reconstruir, execute `powershell -ExecutionPolicy Bypass -File .\android-ap
 - O formulário de orçamento no aplicativo exige Endereço completo, Bairro e Cidade em campos separados.
 - O resumo enviado ao cliente apresenta esses dados separadamente e mantém a Referência como último campo de localização.
 - Orçamentos antigos sem bairro/cidade exigirão o preenchimento desses campos na próxima atualização.
+
+## Imagens e PDFs do atendente — 05/10/2026
+
+- O botão de anexo da conversa permite ao atendente escolher imagens JPEG, PNG e WebP ou documentos PDF.
+- Imagens abrem no visualizador interno responsivo; PDFs abrem no leitor seguro disponível no dispositivo.
+- O limite atual é de 3 MB por arquivo, adequado ao transporte seguro pela função serverless usada na homologação.
+- O recurso é servido pela interface web de homologação e, após o deploy, fica disponível no APK atual sem nova compilação nativa.

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1A2B4C">
+  <meta name="robots" content="noindex,follow">
+  <title>Acompanhe o seu atendimento | JLL Montagens</title>
+  <meta name="description" content="Consulte seu atendimento JLL Montagens, veja o orçamento, o agendamento e converse com nossa equipe.">
+  <link rel="icon" type="image/svg+xml" href="/assets/brand/jll-favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/acompanhe-seu-atendimento/tracking.css">
+</head>
+<body class="tracking-page">
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <header class="tracking-header"><div class="container tracking-nav"><a href="/" aria-label="JLL Montagens — página inicial"><img src="/assets/brand/jll-horizontal-reverse.svg" width="1000" height="300" alt="JLL Montagens"></a><nav><a href="/">Página inicial</a><a href="/#servicos">Serviços</a><button class="tracking-quote-link" type="button">Pedir orçamento</button></nav></div></header>
+  <main id="conteudo">
+    <section class="tracking-hero">
+      <div class="container tracking-hero-grid">
+        <div><p class="tracking-kicker">ACOMPANHAMENTO JLL MONTAGENS</p><h1>Seu atendimento,<br><em>em um só lugar.</em></h1><p>Consulte a conversa, confirme os dados do orçamento e acompanhe cada etapa até a conclusão do serviço.</p></div>
+        <form id="tracking-search" class="tracking-search-card"><span class="tracking-search-icon" aria-hidden="true">⌕</span><div><strong>Localizar atendimento</strong><small>Use o mesmo telefone informado no primeiro contato.</small></div><label>Telefone com DDD<input id="tracking-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(21) 99999-9999" required></label><button type="submit">Acompanhar agora <span>→</span></button><p id="tracking-error" class="tracking-error" role="alert"></p><p class="tracking-privacy">Seus dados são usados apenas para localizar o atendimento.</p></form>
+      </div>
+    </section>
+
+    <section id="tracking-dashboard" class="tracking-dashboard" hidden>
+      <div class="container">
+        <header class="tracking-summary"><div><small>ATENDIMENTO</small><strong id="tracking-ticket">—</strong></div><div><small>STATUS ATUAL</small><strong id="tracking-current-status">—</strong></div><div><small>ÚLTIMA ATUALIZAÇÃO</small><strong id="tracking-updated-at">—</strong></div><button id="tracking-change-phone" type="button">Consultar outro telefone</button></header>
+        <div class="tracking-layout">
+          <div class="tracking-information">
+            <section id="tracking-quote" class="tracking-card quote-highlight" hidden></section>
+            <section id="tracking-no-quote" class="tracking-card tracking-empty-card" hidden><span aria-hidden="true">◇</span><div><h2>Orçamento em preparação</h2><p>Assim que o orçamento for gerado, os dados do serviço e do agendamento aparecerão aqui.</p></div></section>
+            <section class="tracking-card journey-card"><div class="tracking-card-heading"><div><small>JORNADA DO ATENDIMENTO</small><h2>Acompanhe cada etapa</h2></div><span id="tracking-live-badge" class="tracking-live-badge">Atualização automática</span></div><div id="tracking-route" class="tracking-route"></div><ol id="tracking-steps" class="tracking-steps"></ol></section>
+          </div>
+          <section class="tracking-card tracking-conversation"><header><div><small>CONVERSA</small><h2>Fale com a equipe</h2></div><span class="tracking-online"><i></i> Atendimento online</span></header><div id="tracking-messages" class="tracking-messages" aria-live="polite"></div><button id="tracking-jump" class="tracking-jump" type="button" aria-label="Ir para a mensagem mais recente" hidden>↓</button><form id="tracking-message-form" class="tracking-composer"><button id="tracking-attach" type="button" aria-label="Enviar imagem" title="Enviar imagem">＋</button><input id="tracking-file" type="file" accept="image/jpeg,image/png,image/webp" hidden><input name="body" maxlength="2000" placeholder="Digite sua mensagem…" required><button type="submit" aria-label="Enviar mensagem">➤</button></form><p id="tracking-closed" class="tracking-closed" hidden>Este atendimento foi finalizado. O histórico permanece disponível para consulta.</p></section>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="tracking-footer"><div class="container"><img src="/assets/brand/jll-horizontal-reverse.svg" width="1000" height="300" alt="JLL Montagens"><p>Sua mobília, nossa montagem.</p><a href="/politica-de-privacidade.html">Política de privacidade</a></div></footer>
+  <div id="tracking-viewer" class="tracking-viewer" hidden><button type="button" aria-label="Fechar imagem">×</button><img alt="Imagem ampliada"></div>
+  <script src="/acompanhe-seu-atendimento/tracking.js" defer></script>
+</body>
+</html>
