@@ -160,3 +160,12 @@ A jornada já interpreta os eventos `MONTADOR_ATRIBUIDO`, `MONTADOR_A_CAMINHO`, 
 - Depois de localizar um atendimento, a apresentação azul é reduzida a um cabeçalho compacto e o formulário de telefone é recolhido.
 - O resumo do atendimento passa a ocupar imediatamente a área visível, com espaçamento próprio abaixo da faixa azul e sem sobreposição entre os dois blocos.
 - A ação **Consultar outro telefone** restaura a apresentação e o formulário completos.
+
+### Cancelamento de atendimentos — 06/10/2026
+
+- Todos os atendimentos ativos podem ser cancelados pelo responsável ou administrador; atendimentos finalizados permanecem imutáveis.
+- Ao cancelar, o atendimento recebe o status `CANCELADO`, uma mensagem automática e um evento de auditoria `ATENDIMENTO_CANCELADO`.
+- O orçamento relacionado recebe `status_orcamento = 'CANCELADO'`, o link de pagamento é removido e o registro deixa de compor os totais financeiros ativos.
+- O navegador ganhou o menu **Atendimentos cancelados**; esse histórico não aparece como fila no APK.
+- Atendimentos cancelados não aceitam novas mensagens, transferência, anexos, novos links de pagamento ou confirmação tardia de webhook.
+- Antes do deploy, executar `database/migracao-cancelamento-atendimentos.sql` no banco de homologação.

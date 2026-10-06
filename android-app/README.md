@@ -40,6 +40,12 @@ Para reconstruir, execute `powershell -ExecutionPolicy Bypass -File .\android-ap
 - O resumo enviado ao cliente apresenta esses dados separadamente e mantém a Referência como último campo de localização.
 - Orçamentos antigos sem bairro/cidade exigirão o preenchimento desses campos na próxima atualização.
 
+## Cancelamento de atendimentos — 06/10/2026
+
+- O responsável ou administrador pode cancelar o atendimento em qualquer etapa ativa pelo menu de ações da conversa.
+- A fila de atendimentos cancelados fica disponível apenas na versão navegador; o APK mantém a operação compacta e não exibe esse histórico.
+- Depois do cancelamento, a conversa fica somente para consulta e não aceita novas mensagens, anexos ou pagamentos.
+
 ## Imagens e PDFs do atendente — 05/10/2026
 
 - O botão de anexo da conversa permite ao atendente escolher imagens JPEG, PNG e WebP ou documentos PDF.

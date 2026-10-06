@@ -62,7 +62,7 @@ select,textarea{width:100%;border:1px solid #cfded9;border-radius:10px;padding:1
 #logout{display:inline-flex;align-items:center;justify-content:center;gap:7px}.logout-icon{display:block;width:18px;height:18px;fill:currentColor;flex:0 0 auto}.finished-attendances .status-sidebar{display:none}.finished-attendances .admin-layout{grid-template-columns:minmax(300px,390px) minmax(420px,1fr)}
 @media(max-width:800px){
   .finished-attendances .admin-layout{display:block}
-  .app-mode #finished-menu{display:none!important}
+  .app-mode #finished-menu,.app-mode #cancelled-menu{display:none!important}
   .app-mode .status-sidebar{width:100%;max-width:100vw;min-width:0;overflow:hidden}
   .app-mode .filters{display:flex!important;width:100%;max-width:100%;grid-template-columns:none!important;flex-flow:row nowrap!important;gap:6px;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap;touch-action:pan-x;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
   .app-mode .filter{display:inline-flex!important;flex:0 0 auto!important;width:auto!important;min-width:max-content;scroll-snap-align:start}
@@ -70,5 +70,7 @@ select,textarea{width:100%;border:1px solid #cfded9;border-radius:10px;padding:1
   .app-mode #logout::before{content:none!important}.app-mode #logout span{display:none}.app-mode #logout .logout-icon{width:19px;height:19px;color:#fff;fill:#fff}
 }
 /* Anexos do atendente */
+.cancel-button{border:1px solid #e8b5b0!important;background:#fff5f4!important;color:#a13e36!important}.cancel-button:hover,.cancel-button:focus{background:#ffe8e5!important}
+.status-cancelado{color:#a13e36!important;background:#fff0ee!important;border-color:#f0c5c0!important}.finance-status.status-cancelado{background:#fff0ee;color:#a13e36}
 .admin-attach-button{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;padding:0!important;border:1px solid #d5dee6;border-radius:50%;background:#f4f7f9;color:#1A2B4C;font-size:1.35rem;line-height:1}.admin-attach-button:hover,.admin-attach-button:focus{background:#fff1e5;color:#c96414;border-color:#edc8a8}.admin-attach-button.uploading{animation:attachment-pulse .8s ease-in-out infinite alternate}.admin-file-message{display:grid;grid-template-columns:42px minmax(0,1fr);column-gap:10px;align-items:center;min-width:min(250px,70vw);padding:10px;border:1px solid #dce3e9;border-radius:10px;background:#fff;color:#1A2B4C;text-decoration:none}.admin-file-message>span{grid-row:1/3;display:grid;place-items:center;width:42px;height:42px;border-radius:8px;background:#e94b42;color:#fff;font-size:.65rem;font-weight:900}.admin-file-message strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.78rem}.admin-file-message small{margin:0!important;color:#6e7c86!important;font-size:.67rem!important}@keyframes attachment-pulse{to{opacity:.45;transform:scale(.94)}}
 @media(max-width:800px){.conversation-form .admin-attach-button{flex:0 0 40px;width:40px}.admin-file-message{min-width:min(235px,72vw)}}

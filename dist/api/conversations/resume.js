@@ -6,7 +6,7 @@ module.exports = async function handler(req, res) {
   if (phone.length < 12) return res.status(400).json({ error: 'Informe um telefone válido.' });
   try {
     const sql = getDatabase();
-    const conversations = await sql`SELECT * FROM atendimentos WHERE telefone = ${phone} AND status <> 'SERVICO_FINALIZADO' ORDER BY atualizado_em DESC LIMIT 1`;
+    const conversations = await sql`SELECT * FROM atendimentos WHERE telefone = ${phone} AND status NOT IN ('SERVICO_FINALIZADO','CANCELADO') ORDER BY atualizado_em DESC LIMIT 1`;
     if (!conversations[0]) return res.status(404).json({ error: 'Não encontramos atendimento aberto para este telefone.' });
     const conversation = conversations[0];
     const messages = await sql`SELECT m.id, m.tipo_remetente AS sender_type, m.texto AS body, m.criado_em AS created_at, u.nome_exibicao AS sender_name, a.id AS attachment_id, a.tipo_mime AS attachment_mime, a.nome_arquivo AS attachment_name FROM mensagens m LEFT JOIN usuarios_atendimento u ON u.id = m.remetente_id LEFT JOIN anexos_mensagem a ON a.mensagem_id = m.id WHERE m.atendimento_id = ${conversation.id} ORDER BY m.criado_em ASC`;

@@ -26,7 +26,7 @@ module.exports=async function handler(req,res){
     if(!hasValidSignature(fileBuffer,mimeType))return res.status(400).json({error:'O conteúdo do arquivo não corresponde ao formato informado.'});
     const sql=getDatabase();
     const allowed=await sql`SELECT id,atendente_id,status FROM atendimentos WHERE id=${atendimentoId} LIMIT 1`;
-    if(!allowed[0]||allowed[0].status==='SERVICO_FINALIZADO')return res.status(404).json({error:'Atendimento não encontrado ou finalizado.'});
+    if(!allowed[0]||['SERVICO_FINALIZADO','CANCELADO'].includes(allowed[0].status))return res.status(404).json({error:'Atendimento não encontrado ou encerrado.'});
     if(allowed[0].atendente_id!==user.id&&user.perfil!=='ADMINISTRADOR')return res.status(409).json({error:'Assuma ou receba este atendimento antes de enviar anexos.'});
     const blob=await put(`atendimentos/${atendimentoId}/${Date.now()}-${fileName}`,fileBuffer,{access:'private',contentType:mimeType,addRandomSuffix:true});
     const label=mimeType==='application/pdf'?`Documento enviado: ${fileName}`:'Imagem enviada';

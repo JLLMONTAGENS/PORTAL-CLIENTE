@@ -13,6 +13,7 @@ module.exports=async function handler(req,res){
     if(!id||!['PENDENTE','PAGO'].includes(statusPagCliente)||!['PENDENTE','PAGO'].includes(statusPgMontador)||adicionalMontador===null)return res.status(400).json({error:'Dados financeiros inválidos.'});
     const sql=getDatabase(),existing=await sql`SELECT * FROM orcamentos WHERE id=${id} LIMIT 1`;
     if(!existing[0])return res.status(404).json({error:'Orçamento não encontrado.'});
+    if(existing[0].status_orcamento==='CANCELADO')return res.status(409).json({error:'Orçamentos cancelados são somente para consulta.'});
     if(existing[0].status_pag_cliente==='PAGO'&&statusPagCliente==='PENDENTE')return res.status(409).json({error:'Um pagamento confirmado não pode voltar para pendente.'});
     if(statusPgMontador==='PAGO'&&!montadorId)return res.status(400).json({error:'Atribua um montador antes de registrar o pagamento.'});
     let percentual=0;if(montadorId){const montadores=await sql`SELECT id,percentual_repasse FROM montadores WHERE id=${montadorId} AND ativo=TRUE LIMIT 1`;if(!montadores[0])return res.status(400).json({error:'Montador inválido ou inativo.'});percentual=Number(montadores[0].percentual_repasse||0)}

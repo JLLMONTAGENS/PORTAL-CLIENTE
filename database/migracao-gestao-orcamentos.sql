@@ -52,7 +52,7 @@ ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS cidade TEXT;
 
 ALTER TABLE orcamentos DROP CONSTRAINT IF EXISTS orcamentos_status_orcamento_check;
 ALTER TABLE orcamentos ADD CONSTRAINT orcamentos_status_orcamento_check
-  CHECK (status_orcamento IN ('GERADO', 'MONTADOR_ATRIBUIDO', 'FINALIZADO'));
+  CHECK (status_orcamento IN ('GERADO', 'MONTADOR_ATRIBUIDO', 'FINALIZADO', 'CANCELADO'));
 ALTER TABLE orcamentos DROP CONSTRAINT IF EXISTS orcamentos_status_pag_cliente_check;
 ALTER TABLE orcamentos ADD CONSTRAINT orcamentos_status_pag_cliente_check
   CHECK (status_pag_cliente IN ('PENDENTE', 'PAGO'));

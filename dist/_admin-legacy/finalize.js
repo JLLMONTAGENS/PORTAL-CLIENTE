@@ -8,6 +8,8 @@ module.exports=async function handler(req,res){
     const atendimentoId=String(req.body?.atendimentoId||''),sql=getDatabase();
     const atendimentos=await sql`SELECT id,atendente_id,status FROM atendimentos WHERE id=${atendimentoId} LIMIT 1`,atendimento=atendimentos[0];
     if(!atendimento)return res.status(404).json({error:'Atendimento não encontrado.'});
+    if(atendimento.status==='CANCELADO')return res.status(409).json({error:'Atendimentos cancelados não podem ser finalizados.'});
+    if(atendimento.status==='SERVICO_FINALIZADO')return res.status(409).json({error:'Este atendimento já foi finalizado.'});
     if(user.perfil!=='ADMINISTRADOR'&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pode finalizar o atendimento.'});
     const rows=await sql`UPDATE orcamentos SET status_orcamento='FINALIZADO',status_pag_cliente='PAGO',origem_pagamento_cliente=COALESCE(origem_pagamento_cliente,'MANUAL'),pago_cliente_em=COALESCE(pago_cliente_em,NOW()),finalizado_em=COALESCE(finalizado_em,NOW()),atualizado_em=NOW() WHERE atendimento_id=${atendimentoId} RETURNING *`;
     if(!rows[0])return res.status(409).json({error:'Gere o orçamento antes de finalizar o atendimento.'});

@@ -31,8 +31,10 @@ module.exports=async function handler(req,res){
     const quoteId=String(req.body?.orcamentoId||''),provider=safeProvider(req.body?.provedor),sql=getDatabase();
     if(!quoteId||!['MERCADO_PAGO','PAGBANK','REDE'].includes(provider))return res.status(400).json({error:'Informe o orçamento e o provedor.'});
     if(provider==='REDE')return res.status(409).json({error:'A Rede usa checkout direto. A geração será liberada após o credenciamento e a certificação PCI/3DS; não serão coletados dados de cartão antes dessa etapa.'});
-    const rows=await sql`SELECT o.*,a.atendente_id FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id WHERE o.id=${quoteId} LIMIT 1`,quote=rows[0];if(!quote)return res.status(404).json({error:'Orçamento não encontrado.'});
+    const rows=await sql`SELECT o.*,a.atendente_id,a.status AS atendimento_status FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id WHERE o.id=${quoteId} LIMIT 1`,quote=rows[0];if(!quote)return res.status(404).json({error:'Orçamento não encontrado.'});
     if(user.perfil!=='ADMINISTRADOR'&&quote.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode gerar o link.'});
+    if(quote.status_orcamento==='CANCELADO'||quote.atendimento_status==='CANCELADO')return res.status(409).json({error:'Não é possível gerar pagamento para um atendimento cancelado.'});
+    if(quote.status_orcamento==='FINALIZADO'||quote.atendimento_status==='SERVICO_FINALIZADO')return res.status(409).json({error:'Este atendimento já foi finalizado.'});
     if(quote.status_pag_cliente==='PAGO')return res.status(409).json({error:'Este orçamento já está pago.'});
     const config=await configuredProvider(provider);if(!config)return res.status(409).json({error:'Ative e configure esse provedor no menu Pagamentos.'});
     const payment=provider==='MERCADO_PAGO'?await mercadoPago(config,quote):await pagBank(config,quote);

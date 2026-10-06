@@ -14,3 +14,4 @@
 .tracking-page.tracking-results-active .tracking-dashboard{padding-top:28px}
 .tracking-page.tracking-results-active .tracking-summary{margin-top:0}
 @media(max-width:580px){.tracking-page.tracking-results-active .tracking-hero{padding:15px 0 48px}.tracking-page.tracking-results-active .tracking-hero h1{font-size:1.05rem}.tracking-page.tracking-results-active .tracking-dashboard{padding-top:18px}.tracking-page.tracking-results-active .tracking-summary{margin-top:0}}
+.quote-highlight .quote-status.cancelled{background:#fff0ee;color:#a13e36}

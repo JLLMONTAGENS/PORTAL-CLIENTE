@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS atendimentos (
   numero_atendimento BIGSERIAL UNIQUE,
   nome_cliente TEXT NOT NULL,
   telefone TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'GEROU_ORCAMENTO', 'ATRIBUIDO_MONTADOR', 'SERVICO_FINALIZADO')),
+  status TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'GEROU_ORCAMENTO', 'ATRIBUIDO_MONTADOR', 'SERVICO_FINALIZADO', 'CANCELADO')),
   montador_id UUID REFERENCES montadores(id),
   atendente_id UUID REFERENCES usuarios_atendimento(id),
   detalhes_servico TEXT,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS atendimentos (
 
 CREATE UNIQUE INDEX IF NOT EXISTS atendimentos_um_aberto_por_telefone
   ON atendimentos (telefone)
-  WHERE status <> 'SERVICO_FINALIZADO';
+  WHERE status NOT IN ('SERVICO_FINALIZADO', 'CANCELADO');
 
 CREATE INDEX IF NOT EXISTS atendimentos_status_atualizado_idx
   ON atendimentos (status, atualizado_em DESC);
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   telefone_alternativo TEXT,
   descricao_servico TEXT NOT NULL,
   valor NUMERIC(18,2) NOT NULL CHECK (valor >= 0),
-  status_orcamento TEXT NOT NULL DEFAULT 'GERADO' CHECK (status_orcamento IN ('GERADO', 'MONTADOR_ATRIBUIDO', 'FINALIZADO')),
+  status_orcamento TEXT NOT NULL DEFAULT 'GERADO' CHECK (status_orcamento IN ('GERADO', 'MONTADOR_ATRIBUIDO', 'FINALIZADO', 'CANCELADO')),
   status_pag_cliente TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status_pag_cliente IN ('PENDENTE', 'PAGO')),
   status_pg_montador TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status_pg_montador IN ('PENDENTE', 'PAGO')),
   valor_montador NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (valor_montador >= 0),

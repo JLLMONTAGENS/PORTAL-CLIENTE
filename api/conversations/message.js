@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
   if (!conversationId || !body) return res.status(400).json({ error: 'Mensagem vazia.' });
   try {
     const sql = getDatabase();
-    const open = await sql`SELECT id FROM atendimentos WHERE id = ${conversationId} AND status <> 'SERVICO_FINALIZADO' LIMIT 1`;
+    const open = await sql`SELECT id FROM atendimentos WHERE id = ${conversationId} AND status NOT IN ('SERVICO_FINALIZADO','CANCELADO') LIMIT 1`;
     if (!open[0]) return res.status(404).json({ error: 'Atendimento não encontrado ou encerrado.' });
     const rows = await sql`INSERT INTO mensagens (atendimento_id, tipo_remetente, texto) VALUES (${conversationId}, 'CLIENTE', ${body}) RETURNING id, tipo_remetente AS sender_type, texto AS body, criado_em AS created_at`;
     await sql`UPDATE atendimentos SET atualizado_em = NOW() WHERE id = ${conversationId}`;

@@ -21,7 +21,7 @@ module.exports=async function handler(req,res){
     const valor=moneyValue(req.body?.valor);
     if(!atendimentoId||descricaoServico.length<5||!agendadoPara||Number.isNaN(new Date(agendadoPara).getTime())||endereco.length<5||bairro.length<2||cidade.length<2||valor===null||Number(valor)<0)return res.status(400).json({error:'Preencha descrição, valor, data de agendamento, endereço, bairro e cidade corretamente.'});
     const sql=getDatabase();
-    const atendimentos=await sql`SELECT id,numero_atendimento,nome_cliente,telefone,atendente_id FROM atendimentos WHERE id=${atendimentoId} AND status <> 'SERVICO_FINALIZADO' LIMIT 1`;
+    const atendimentos=await sql`SELECT id,numero_atendimento,nome_cliente,telefone,atendente_id FROM atendimentos WHERE id=${atendimentoId} AND status NOT IN ('SERVICO_FINALIZADO','CANCELADO') LIMIT 1`;
     const atendimento=atendimentos[0];if(!atendimento)return res.status(404).json({error:'Atendimento não encontrado ou finalizado.'});
     if(user.perfil!=='ADMINISTRADOR'&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode gerar o orçamento.'});
     let percentualRepasse=0;if(montadorId){const montador=await sql`SELECT id,percentual_repasse FROM montadores WHERE id=${montadorId} AND ativo=TRUE LIMIT 1`;if(!montador[0])return res.status(400).json({error:'Montador inválido ou inativo.'});percentualRepasse=Number(montador[0].percentual_repasse||0)}

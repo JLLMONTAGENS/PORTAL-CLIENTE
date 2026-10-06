@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   telefone_alternativo TEXT,
   descricao_servico TEXT NOT NULL,
   valor NUMERIC(18,2) NOT NULL CHECK (valor >= 0),
-  status_orcamento TEXT NOT NULL DEFAULT 'GERADO' CHECK (status_orcamento IN ('GERADO', 'MONTADOR_ATRIBUIDO', 'FINALIZADO')),
+  status_orcamento TEXT NOT NULL DEFAULT 'GERADO' CHECK (status_orcamento IN ('GERADO', 'MONTADOR_ATRIBUIDO', 'FINALIZADO', 'CANCELADO')),
   status_pag_cliente TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status_pag_cliente IN ('PENDENTE', 'PAGO')),
   status_pg_montador TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status_pg_montador IN ('PENDENTE', 'PAGO')),
   valor_montador NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (valor_montador >= 0),

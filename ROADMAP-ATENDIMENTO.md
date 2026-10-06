@@ -37,3 +37,10 @@ A central de atendimento web deve evoluir para um aplicativo para iOS e Android 
 - Atendente: envio de imagens JPEG, PNG e WebP e documentos PDF.
 - Arquivos armazenados de forma privada e acessados pela mensagem correspondente.
 - Evolução futura: antivírus/antimalware assíncrono e política configurável de retenção dos anexos.
+
+## Cancelamento de atendimentos — 06/10/2026
+
+- Cancelamento disponível em todas as etapas ativas para o responsável ou administrador.
+- Finalizados não podem ser cancelados; o orçamento associado passa a `CANCELADO` e não retorna aos totais financeiros.
+- Histórico de cancelados separado no navegador, com acesso somente para consulta; não há fila separada no APK.
+- Mensagens, anexos, transferências e webhooks de pagamento são bloqueados depois do cancelamento.

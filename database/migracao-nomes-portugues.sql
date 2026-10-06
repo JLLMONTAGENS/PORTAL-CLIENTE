@@ -66,7 +66,7 @@ UPDATE atendimentos SET status = CASE status
 END;
 
 ALTER TABLE atendimentos ALTER COLUMN status SET DEFAULT 'PENDENTE';
-ALTER TABLE atendimentos ADD CONSTRAINT atendimentos_status_check CHECK (status IN ('PENDENTE', 'GEROU_ORCAMENTO', 'ATRIBUIDO_MONTADOR', 'SERVICO_FINALIZADO'));
+ALTER TABLE atendimentos ADD CONSTRAINT atendimentos_status_check CHECK (status IN ('PENDENTE', 'GEROU_ORCAMENTO', 'ATRIBUIDO_MONTADOR', 'SERVICO_FINALIZADO', 'CANCELADO'));
 UPDATE mensagens SET tipo_remetente = CASE tipo_remetente
   WHEN 'customer' THEN 'CLIENTE'
   WHEN 'staff' THEN 'ATENDENTE'
@@ -79,7 +79,7 @@ ALTER TABLE mensagens ADD CONSTRAINT mensagens_texto_check CHECK (texto IS NOT N
 
 DROP INDEX IF EXISTS atendimentos_um_aberto_por_telefone;
 DROP INDEX IF EXISTS conversations_one_open_per_phone;
-CREATE UNIQUE INDEX atendimentos_um_aberto_por_telefone ON atendimentos (telefone) WHERE status <> 'SERVICO_FINALIZADO';
+CREATE UNIQUE INDEX atendimentos_um_aberto_por_telefone ON atendimentos (telefone) WHERE status NOT IN ('SERVICO_FINALIZADO', 'CANCELADO');
 
 DROP INDEX IF EXISTS atendimentos_status_atualizado_idx;
 CREATE INDEX atendimentos_status_atualizado_idx ON atendimentos (status, atualizado_em DESC);
