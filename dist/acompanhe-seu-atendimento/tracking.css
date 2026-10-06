@@ -11,6 +11,6 @@
 .tracking-page.tracking-results-active .tracking-hero h1{margin:0;font-size:1.35rem;line-height:1.25;letter-spacing:-.02em}
 .tracking-page.tracking-results-active .tracking-hero h1 br{display:none}
 .tracking-page.tracking-results-active .tracking-hero h1 em{font-family:inherit;font-size:inherit;font-weight:inherit}
-.tracking-page.tracking-results-active .tracking-dashboard{padding-top:18px}
-.tracking-page.tracking-results-active .tracking-summary{margin-top:-38px}
-@media(max-width:580px){.tracking-page.tracking-results-active .tracking-hero{padding:15px 0 48px}.tracking-page.tracking-results-active .tracking-hero h1{font-size:1.05rem}.tracking-page.tracking-results-active .tracking-dashboard{padding-top:14px}.tracking-page.tracking-results-active .tracking-summary{margin-top:-30px}}
+.tracking-page.tracking-results-active .tracking-dashboard{padding-top:28px}
+.tracking-page.tracking-results-active .tracking-summary{margin-top:0}
+@media(max-width:580px){.tracking-page.tracking-results-active .tracking-hero{padding:15px 0 48px}.tracking-page.tracking-results-active .tracking-hero h1{font-size:1.05rem}.tracking-page.tracking-results-active .tracking-dashboard{padding-top:18px}.tracking-page.tracking-results-active .tracking-summary{margin-top:0}}

@@ -158,5 +158,5 @@ A jornada já interpreta os eventos `MONTADOR_ATRIBUIDO`, `MONTADOR_A_CAMINHO`, 
 ### Ajuste de experiência após a consulta — 06/10/2026
 
 - Depois de localizar um atendimento, a apresentação azul é reduzida a um cabeçalho compacto e o formulário de telefone é recolhido.
-- O resumo do atendimento passa a ocupar imediatamente a área visível, sem ficar comprimido na divisão entre a apresentação e o conteúdo.
+- O resumo do atendimento passa a ocupar imediatamente a área visível, com espaçamento próprio abaixo da faixa azul e sem sobreposição entre os dois blocos.
 - A ação **Consultar outro telefone** restaura a apresentação e o formulário completos.
