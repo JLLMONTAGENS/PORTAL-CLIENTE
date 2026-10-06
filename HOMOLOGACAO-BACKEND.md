@@ -154,3 +154,9 @@ Os arquivos da interface usam estratégia online-first: quando há internet, o a
 ### Contrato preparado para o futuro aplicativo do montador
 
 A jornada já interpreta os eventos `MONTADOR_ATRIBUIDO`, `MONTADOR_A_CAMINHO`, `MONTADOR_CHEGOU` e `ATENDIMENTO_FINALIZADO` da tabela `eventos_atendimento`. Nesta etapa, apenas a atribuição e a finalização já são produzidas pelo sistema atual. O futuro aplicativo do montador deverá registrar os eventos de saída e chegada e, em uma etapa posterior, enviar localização autorizada para alimentar o mapa em tempo real. Nenhum dado financeiro interno ou valor de repasse do montador é exposto ao cliente.
+
+### Ajuste de experiência após a consulta — 06/10/2026
+
+- Depois de localizar um atendimento, a apresentação azul é reduzida a um cabeçalho compacto e o formulário de telefone é recolhido.
+- O resumo do atendimento passa a ocupar imediatamente a área visível, sem ficar comprimido na divisão entre a apresentação e o conteúdo.
+- A ação **Consultar outro telefone** restaura a apresentação e o formulário completos.
