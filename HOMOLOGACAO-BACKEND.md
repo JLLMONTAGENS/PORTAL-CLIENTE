@@ -141,6 +141,7 @@ Os arquivos da interface usam estratégia online-first: quando há internet, o a
 ## Acompanhamento do cliente e anexos do atendente — 05/10/2026
 
 - O menu principal possui agora o acesso **Acompanhe seu atendimento**, disponível também no menu móvel.
+- No tema claro do site, o acesso possui contraste próprio ao lado de **Pedir orçamento** e navega na mesma aba (`target="_self"`), preservando a sessão do navegador.
 - A página pública fica em `/acompanhe-seu-atendimento/`. O cliente localiza o registro com o mesmo telefone informado no atendimento.
 - A consulta usa `POST /api/conversations/tracking` e retorna a conversa mais recente, priorizando atendimentos ainda abertos.
 - Quando há orçamento, serviço, valor, data agendada e endereço segmentado ficam destacados fora do histórico de mensagens. A data é apresentada sem horário.

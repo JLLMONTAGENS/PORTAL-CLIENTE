@@ -29,6 +29,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{o
 .site-header nav a:hover,.site-header nav a:focus{color:var(--gold)}
 .header-cta{border:0;border-radius:11px;background:var(--gold);color:#fff;padding:11px 18px;text-transform:none;letter-spacing:0;font-size:.79rem;box-shadow:0 8px 20px rgba(230,126,34,.2)}
 .header-cta:hover,.header-cta:focus{background:#CB6617;color:#fff;transform:translateY(-1px);box-shadow:0 12px 25px rgba(230,126,34,.25)}
+.header-track-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 15px;border:1px solid #D7DEE8;border-radius:11px;background:#fff;color:var(--ink);font-size:.76rem;font-weight:750;line-height:1.2;letter-spacing:0;text-transform:none;white-space:nowrap;box-shadow:0 6px 18px rgba(26,43,76,.06)}
+.header-track-link:hover,.header-track-link:focus{border-color:rgba(230,126,34,.65);background:#FFF7F0;color:#B9560F;transform:translateY(-1px);box-shadow:0 10px 22px rgba(26,43,76,.09)}
 .menu-toggle{color:var(--ink)}
 .menu-toggle span{background:var(--ink)!important}
 
@@ -176,10 +178,19 @@ footer{background:#111F39;padding-top:52px}
 .related-grid a:hover,.related-grid a:focus{border-color:rgba(230,126,34,.5);box-shadow:0 14px 30px rgba(26,43,76,.08)}
 .page-note{border:1px solid #F1DDCB;border-left:4px solid var(--gold);border-radius:10px;background:#FFF8F2}
 
+@media(max-width:1180px) and (min-width:901px){
+  .nav-wrap{gap:18px}
+  .site-header .brand-logo{width:165px}
+  .site-header nav{gap:16px}
+  .header-cta,.header-track-link{padding-inline:12px;font-size:.72rem}
+}
+
 @media(max-width:900px){
   .container{width:min(var(--max),calc(100% - 36px))}
+  .header-track-link{display:none}
   .site-header.open nav{top:82px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;box-shadow:0 18px 30px rgba(26,43,76,.09)}
   .site-header.open nav a{color:var(--ink)}
+  .site-header.open nav .mobile-track-link{display:block;margin-top:4px;padding:16px 0 0;border-top:1px solid var(--line);color:#B9560F;font-weight:800}
   .hero-grid{grid-template-columns:1fr;padding:54px 0 70px}
   .hero-copy{padding:12px 0 30px}
   .hero-visual{height:auto;min-height:520px}
