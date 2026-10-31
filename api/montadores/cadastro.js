@@ -9,7 +9,7 @@ module.exports=async function handler(req,res){
     if(!c.validCpf(cpf))return res.status(400).json({error:'CPF inválido.'});
     if(possuiCnpj&&!c.validCnpj(cnpj))return res.status(400).json({error:'Informe um CNPJ válido.'});
     if(!c.validEmail(email))return res.status(400).json({error:'E-mail inválido.'});
-    if(senha.length<10)return res.status(400).json({error:'A senha deve ter pelo menos 10 caracteres.'});
+    if(senha.length<c.MIN_PASSWORD_LENGTH)return res.status(400).json({error:`A senha deve ter pelo menos ${c.MIN_PASSWORD_LENGTH} caracteres.`});
     if(whatsapp.length<10||whatsapp.length>13)return res.status(400).json({error:'WhatsApp inválido.'});
     if(cep.length!==8||!c.clean(b.logradouro)||!c.clean(b.numero)||!c.clean(b.bairro)||!c.clean(b.cidade)||!/^[A-Z]{2}$/.test(uf))return res.status(400).json({error:'Preencha o endereço completo.'});
     if(!bancoCodigo||!bancoNome||!c.clean(b.agencia)||!c.clean(b.conta)||!c.clean(b.chavePix))return res.status(400).json({error:'Preencha todos os dados bancários.'});

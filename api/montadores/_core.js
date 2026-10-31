@@ -3,6 +3,7 @@ const nodemailer=require('nodemailer');
 const {getDatabase}=require('../_db');
 
 const TERM_VERSION='2026-10-31.1';
+const MIN_PASSWORD_LENGTH=6;
 const TERM_HASHES={
   PRIVACIDADE_LGPD:crypto.createHash('sha256').update('JLL-LGPD-'+TERM_VERSION).digest('hex'),
   PRESTACAO_AUTONOMA:crypto.createHash('sha256').update('JLL-AUTONOMO-'+TERM_VERSION).digest('hex'),
@@ -33,4 +34,4 @@ async function sendAssemblerEmail(montadorId,to,type,subject,html){const sql=get
 const statusLabel=status=>({CADASTRO_RECEBIDO:'Cadastro recebido',PENDENTE_DOCUMENTO:'Pendente de certidão',EM_ANALISE:'Em análise',APROVADO:'Aprovado',REJEITADO:'Não aprovado',SUSPENSO:'Suspenso',LEGADO:'Cadastro legado'}[status]||status);
 async function notifyStatus(row,previous){if(!row?.email)return;await sendAssemblerEmail(row.id,row.email,'STATUS_ALTERADO',`Área do Montador: ${statusLabel(row.status_cadastro)}`,emailLayout('Atualização do seu cadastro',`<p>Olá, ${clean(row.nome_completo||row.nome)}.</p><p>O status do seu cadastro mudou de <strong>${statusLabel(previous)}</strong> para <strong>${statusLabel(row.status_cadastro)}</strong>.</p><p>Acesse a Área do Montador para acompanhar as pendências.</p>`))}
 
-module.exports={TERM_VERSION,TERM_HASHES,STATUS,digits,clean,validCpf,validCnpj,validEmail,validFullName,hashPassword,verifyPassword,sessionToken,currentAssembler,requestIp,maskCpf,publicAssembler,encrypt,decrypt,emailLayout,sendAssemblerEmail,notifyStatus,statusLabel};
+module.exports={TERM_VERSION,MIN_PASSWORD_LENGTH,TERM_HASHES,STATUS,digits,clean,validCpf,validCnpj,validEmail,validFullName,hashPassword,verifyPassword,sessionToken,currentAssembler,requestIp,maskCpf,publicAssembler,encrypt,decrypt,emailLayout,sendAssemblerEmail,notifyStatus,statusLabel};
