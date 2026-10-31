@@ -1,0 +1,3 @@
+.tracking-message:has(.chat-quote-summary){width:96%;max-width:96%;padding:0;overflow:hidden;border:1px solid #dfe7e5;box-shadow:0 6px 18px rgba(26,43,76,.08)}
+.tracking-message:has(.chat-quote-summary)>small{margin:0;padding:0 12px 9px;background:#fff5eb}
+@media(max-width:380px){.tracking-message:has(.chat-quote-summary){width:100%;max-width:100%}}
