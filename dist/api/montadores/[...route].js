@@ -1,9 +1,9 @@
 // A função vive dentro de dist, mas reutiliza os handlers-fonte da raiz.
-// Estas importações explícitas garantem que a Vercel inclua no bundle os
-// pacotes usados indiretamente pelos handlers externos ao diretório de saída.
-require('@neondatabase/serverless');
-require('@vercel/blob');
-require('nodemailer');
+// Os módulos são resolvidos no contexto de dist e compartilhados com os
+// handlers externos, pois /var/task/api não enxerga /var/task/dist/node_modules.
+global.__JLL_NEON_SERVERLESS=require('@neondatabase/serverless');
+global.__JLL_VERCEL_BLOB=require('@vercel/blob');
+global.__JLL_NODEMAILER=require('nodemailer');
 
 const handlers={
   cadastro:require('../../../api/montadores/cadastro'),

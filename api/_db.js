@@ -1,4 +1,4 @@
-const { neon } = require('@neondatabase/serverless');
+const { neon } = global.__JLL_NEON_SERVERLESS || require('@neondatabase/serverless');
 
 function getDatabase() {
   const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;

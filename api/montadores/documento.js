@@ -1,4 +1,4 @@
-const {put}=require('@vercel/blob');const {getDatabase}=require('../_db');const c=require('./_core');
+const {put}=global.__JLL_VERCEL_BLOB||require('@vercel/blob');const {getDatabase}=require('../_db');const c=require('./_core');
 const signatures={
   'application/pdf':b=>b.subarray(0,5).toString()==='%PDF-',
   'image/jpeg':b=>b[0]===0xff&&b[1]===0xd8&&b[2]===0xff,

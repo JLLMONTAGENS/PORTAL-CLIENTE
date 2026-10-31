@@ -1,5 +1,5 @@
 const crypto=require('crypto');
-const nodemailer=require('nodemailer');
+const nodemailer=global.__JLL_NODEMAILER||require('nodemailer');
 const {getDatabase}=require('../_db');
 
 const TERM_VERSION='2026-10-31.1';
