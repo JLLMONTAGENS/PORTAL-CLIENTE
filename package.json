@@ -3,8 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "description": "Site e API de atendimento da JLL Montagens",
+  "scripts": {
+    "test": "node --test tests/montadores.test.js"
+  },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
-    "@vercel/blob": "^2.3.0"
+    "@vercel/blob": "^2.3.0",
+    "nodemailer": "^10.3.1"
+  },
+  "overrides": {
+    "zod": "^4.6.6"
   }
 }

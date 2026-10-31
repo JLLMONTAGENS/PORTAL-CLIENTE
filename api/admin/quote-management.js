@@ -18,6 +18,10 @@ module.exports=async function handler(req,res){
     if(statusPgMontador==='PAGO'&&!montadorId)return res.status(400).json({error:'Atribua um montador antes de registrar o pagamento.'});
     let percentual=0;if(montadorId){const montadores=await sql`SELECT id,percentual_repasse FROM montadores WHERE id=${montadorId} AND ativo=TRUE LIMIT 1`;if(!montadores[0])return res.status(400).json({error:'Montador inválido ou inativo.'});percentual=Number(montadores[0].percentual_repasse||0)}
     const valorMontador=(Number(existing[0].valor)*percentual/100).toFixed(2);
+    const totalMontador=(Number(valorMontador)+Number(adicionalMontador)).toFixed(2);
+    if(statusPgMontador==='PAGO'&&existing[0].status_pg_montador!=='PAGO'){
+      const nfse=(await sql`SELECT id FROM documentos_montador WHERE montador_id=${montadorId} AND tipo='NOTA_FISCAL_SERVICO' AND status_revisao='APROVADO' AND valor_total=${totalMontador} AND (referencia_pagamento=${String(existing[0].numero_atendimento)} OR referencia_pagamento=${id}) LIMIT 1`)[0];if(!nfse)return res.status(409).json({error:`O repasse de R$ ${totalMontador.replace('.',',')} exige NFS-e aprovada pelo valor total, referenciada pelo atendimento ${existing[0].numero_atendimento}.`});
+    }
     const statusOrcamento=statusPagCliente==='PAGO'?'FINALIZADO':montadorId?'MONTADOR_ATRIBUIDO':'GERADO';
     const atendimentoStatus=statusPagCliente==='PAGO'?'SERVICO_FINALIZADO':montadorId?'ATRIBUIDO_MONTADOR':'GEROU_ORCAMENTO';
     const origem=statusPagCliente==='PAGO'?(existing[0].origem_pagamento_cliente||'MANUAL'):null;

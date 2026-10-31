@@ -169,3 +169,33 @@ A jornada já interpreta os eventos `MONTADOR_ATRIBUIDO`, `MONTADOR_A_CAMINHO`, 
 - O navegador ganhou o menu **Atendimentos cancelados**; esse histórico não aparece como fila no APK.
 - Atendimentos cancelados não aceitam novas mensagens, transferência, anexos, novos links de pagamento ou confirmação tardia de webhook.
 - Antes do deploy, executar `database/migracao-cancelamento-atendimentos.sql` no banco de homologação.
+
+## Área do Montador — 31/10/2026
+
+Antes de publicar esta versão na homologação, execute `database/migracao-area-montador.sql` no banco **de homologação**. A migração é reexecutável e preserva montadores legados.
+
+Configure somente no ambiente de homologação:
+
+- `MONTADOR_SESSION_SECRET`: segredo aleatório para assinar a sessão do montador (pode usar `ADMIN_SESSION_SECRET` como contingência, mas recomenda-se segredo independente);
+- `SMTP_CONFIG_ENCRYPTION_KEY`: segredo aleatório de pelo menos 32 caracteres para criptografar a senha SMTP (pode usar `PAYMENT_CONFIG_ENCRYPTION_KEY` como contingência);
+- `BLOB_READ_WRITE_TOKEN`: token do Vercel Blob já usado pelos anexos privados.
+
+Fluxos incluídos:
+
+- cadastro público em `/area-do-montador/`, com CPF/CNPJ validados, CEP, banco pesquisável e senha própria;
+- termos versionados (`2026-10-31.1`) e registros de aceite com hash, data, IP e navegador;
+- certidão enviada pelo próprio profissional, sem consulta criminal automatizada;
+- cadastro permanece pendente até o envio e a revisão humana da certidão;
+- documentos privados no Vercel Blob, servidos apenas a administradores autenticados;
+- gestão em `/admin/montadores.html`, com edição, pendências, revisão, aprovação e auditoria;
+- configuração SMTP Locaweb em `/admin/configuracoes-email.html`;
+- e-mails de cadastro recebido, termos aceitos, revisão de certidão e mudanças de status;
+- envio de NFS-e pelo valor total previsto e bloqueio do registro de repasse pago sem NFS-e aprovada e referenciada ao atendimento.
+
+O servidor SMTP padrão segue a configuração oficial da Locaweb: `email-ssl.com.br`, porta `465`, SSL/TLS. O usuário SMTP deve ser o endereço completo da conta e deve coincidir com o remetente configurado.
+
+### Verificações locais
+
+- `npm install`
+- `npm test`
+- `npm audit --omit=dev`
