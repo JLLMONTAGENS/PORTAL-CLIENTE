@@ -467,7 +467,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int index = 0;
   bool loading = true, syncing = false;
   String? message;
-  List<dynamic> pending = [], execution = [], transfers = [], received = [];
+  List<dynamic> pending = [],
+      execution = [],
+      pendingTransfers = [],
+      transfers = [],
+      received = [];
   StreamSubscription<List<ConnectivityResult>>? connectivity;
   @override
   void initState() {
@@ -495,6 +499,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _loadCache() async {
     pending = (await LocalStore.instance.read('pending') as List?) ?? [];
     execution = (await LocalStore.instance.read('execution') as List?) ?? [];
+    pendingTransfers =
+        (await LocalStore.instance.read('pending_transfers') as List?) ?? [];
     transfers = (await LocalStore.instance.read('transfers') as List?) ?? [];
     received = (await LocalStore.instance.read('received') as List?) ?? [];
     if (mounted) setState(() => loading = false);
@@ -552,16 +558,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final results = await Future.wait([
         widget.api.request('/api/montadores/servicos?view=PENDENTES_ACEITE'),
         widget.api.request('/api/montadores/servicos?view=PENDENTES_EXECUCAO'),
+        widget.api.request('/api/montadores/servicos?view=PENDENTES_REPASSE'),
         widget.api.request('/api/montadores/pagamentos'),
         widget.api.request('/api/montadores/pagamentos?view=RECEBIDOS'),
       ]);
       pending = results[0]['servicos'] as List? ?? [];
       execution = results[1]['servicos'] as List? ?? [];
-      transfers = results[2]['pagamentos'] as List? ?? [];
-      received = (results[3]['pagamentos'] as List? ?? []).take(5).toList();
+      pendingTransfers = results[2]['servicos'] as List? ?? [];
+      transfers = results[3]['pagamentos'] as List? ?? [];
+      received = (results[4]['pagamentos'] as List? ?? []).take(5).toList();
       await Future.wait([
         LocalStore.instance.cache('pending', pending),
         LocalStore.instance.cache('execution', execution),
+        LocalStore.instance.cache('pending_transfers', pendingTransfers),
         LocalStore.instance.cache('transfers', transfers),
         LocalStore.instance.cache('received', received),
       ]);
@@ -613,6 +622,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         title: 'Pendentes de execução',
         empty: 'Nenhum serviço aguardando execução.',
         services: execution,
+        action: queueAction,
+      ),
+      ServiceList(
+        title: 'Pendentes de repasse',
+        empty: 'Nenhum serviço finalizado aguardando geração de pagamento.',
+        services: pendingTransfers,
         action: queueAction,
       ),
       PaymentList(
@@ -682,6 +697,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: const Icon(Icons.build_outlined),
             ),
             label: 'Executar',
+          ),
+          NavigationDestination(
+            icon: Badge(
+              label: Text('${pendingTransfers.length}'),
+              child: const Icon(Icons.payments_outlined),
+            ),
+            label: 'A repassar',
           ),
           NavigationDestination(
             icon: Badge(
@@ -839,20 +861,20 @@ class _ServiceCardState extends State<ServiceCard> {
                 icon: Icons.phone_outlined,
                 text: '${d['telefoneCliente']}',
               ),
-                  if ('${d['telefoneAlternativo'] ?? ''}'.trim().isNotEmpty)
-                    InfoRow(
-                      icon: Icons.phone_in_talk_outlined,
-                      text: 'Alternativo: ${d['telefoneAlternativo']}',
-                    ),
+              if ('${d['telefoneAlternativo'] ?? ''}'.trim().isNotEmpty)
+                InfoRow(
+                  icon: Icons.phone_in_talk_outlined,
+                  text: 'Alternativo: ${d['telefoneAlternativo']}',
+                ),
               InfoRow(
                 icon: Icons.home_outlined,
                 text: '${d['endereco']} · ${d['bairro']} · ${d['cidade']}',
               ),
-                  if ('${d['referencia'] ?? ''}'.trim().isNotEmpty)
-                    InfoRow(
-                      icon: Icons.near_me_outlined,
-                      text: 'Referência: ${d['referencia']}',
-                    ),
+              if ('${d['referencia'] ?? ''}'.trim().isNotEmpty)
+                InfoRow(
+                  icon: Icons.near_me_outlined,
+                  text: 'Referência: ${d['referencia']}',
+                ),
             ] else
               const Padding(
                 padding: EdgeInsets.only(top: 8),
