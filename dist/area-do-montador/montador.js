@@ -21,3 +21,65 @@ async function upload(formElement,tipo){const message=formElement.querySelector(
 $('#certificate-form').addEventListener('submit',e=>{e.preventDefault();upload(e.currentTarget,'CERTIDAO_ANTECEDENTES')});$('#invoice-form').addEventListener('submit',e=>{e.preventDefault();upload(e.currentTarget,'NOTA_FISCAL_SERVICO')});
 $('#logout').addEventListener('click',async()=>{await fetch('/api/montadores/logout',{method:'POST'});show('login')});
 api('/api/montadores/status').then(()=>loadStatus()).then(()=>show('status')).catch(()=>{});
+
+const moneyBR=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const dateInput=value=>{const date=value?new Date(value):new Date();return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(date)};
+const operationId=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(16).slice(2)}`;
+let operationReady=false;
+
+function setupOperations(){
+  if(operationReady)return;
+  operationReady=true;
+  const start=new Date();start.setDate(1);
+  const section=document.createElement('section');
+  section.id='assembler-operations';
+  section.className='operation-area';
+  section.innerHTML=`<div class="operation-heading"><span>OPERAÇÃO DO MONTADOR</span><h2>Serviços e repasses</h2><p>No navegador você pode aceitar propostas e consultar os atendimentos. Fotos e finalização são exclusivas do aplicativo móvel.</p></div><nav class="operation-tabs" aria-label="Áreas operacionais"><button data-operation-view="PENDENTES_ACEITE" class="active">Para aceitar</button><button data-operation-view="PENDENTES_EXECUCAO">Para executar</button><button data-operation-view="PENDENTES_REPASSE">Repasse pendente</button><button data-operation-view="PAGAMENTOS">Pagamentos gerados</button><button data-operation-view="RECEBIDOS">Repasses recebidos</button></nav><div id="operation-history-filter" class="operation-filter" hidden><label>De<input id="operation-from" type="date" value="${dateInput(start)}"></label><label>Até<input id="operation-to" type="date" value="${dateInput(new Date())}"></label><button id="operation-filter-button" type="button" class="secondary">Filtrar</button></div><p id="operation-message" class="form-message" role="status"></p><div id="operation-list" class="operation-list"></div>`;
+  statusView.appendChild(section);
+  section.querySelector('.operation-tabs').addEventListener('click',event=>{const button=event.target.closest('[data-operation-view]');if(!button)return;section.querySelectorAll('[data-operation-view]').forEach(item=>item.classList.toggle('active',item===button));loadOperation(button.dataset.operationView)});
+  section.querySelector('#operation-filter-button').onclick=()=>loadOperation('RECEBIDOS');
+  section.querySelector('#operation-list').addEventListener('click',operationClick);
+  section.querySelector('#operation-list').addEventListener('submit',invoiceSubmit);
+}
+
+const serviceStatusLabel={PENDENTE_ACEITE:'Aguardando seu aceite',ACEITO:'Aceito',EM_EXECUCAO:'Em execução',CONCLUIDO:'Concluído'};
+function serviceCard(service,view){
+  const privateDetails=service.nomeCliente?`<dl><div><dt>Cliente</dt><dd>${escapeHtml(service.nomeCliente)}</dd></div><div><dt>Contato</dt><dd>${escapeHtml(service.telefoneCliente||'—')}</dd></div><div class="wide"><dt>Endereço</dt><dd>${escapeHtml(service.endereco||'—')} · ${escapeHtml(service.bairro||'')} · ${escapeHtml(service.cidade||'')}</dd></div>${service.referencia?`<div class="wide"><dt>Referência</dt><dd>${escapeHtml(service.referencia)}</dd></div>`:''}</dl>`:`<p class="privacy-note">Os dados pessoais e o endereço completo serão liberados depois do aceite.</p>`;
+  const actions=view==='PENDENTES_ACEITE'?`<div class="service-actions"><button type="button" data-service-action="ACEITAR" data-id="${service.id}">Aceitar serviço</button><button type="button" class="secondary" data-service-action="RECUSAR" data-id="${service.id}">Recusar</button></div>`:'';
+  return `<article class="service-card"><header><div><small>ATENDIMENTO #${escapeHtml(service.numeroAtendimento)}</small><h3>${escapeHtml(service.descricaoServico)}</h3></div><span>${serviceStatusLabel[service.status]||escapeHtml(service.status)}</span></header><dl><div><dt>Agendamento</dt><dd>${formatDate(service.agendadoPara)}</dd></div><div><dt>Localidade</dt><dd>${escapeHtml(service.bairro)} · ${escapeHtml(service.cidade)}</dd></div><div><dt>Repasse</dt><dd>${moneyBR(service.valorRepasse)}</dd></div>${service.fotos?`<div><dt>Fotos</dt><dd>${service.fotos}</dd></div>`:''}</dl>${privateDetails}${actions}${view==='PENDENTES_EXECUCAO'?'<p class="app-only-note">Use o aplicativo móvel para registrar deslocamento, chegada, fotos e finalização.</p>':''}</article>`;
+}
+
+function paymentCard(payment,received=false){
+  const items=payment.itens.map(item=>`<li><span>#${escapeHtml(item.numeroAtendimento)} · ${escapeHtml(item.descricaoServico)}</span><strong>${moneyBR(item.valor)}</strong></li>`).join('');
+  const invoice=['AGUARDANDO_NFSE','NFSE_REJEITADA'].includes(payment.status)?`<form class="payment-invoice-form" data-payment-id="${payment.id}"><p>A NFS-e deve ter o valor total exato deste pagamento.</p><input name="valorTotal" type="hidden" value="${payment.valorTotal}"><input name="file" type="file" accept="application/pdf,image/jpeg,image/png" required><button type="submit">Anexar NFS-e de ${moneyBR(payment.valorTotal)}</button><p class="form-message"></p></form>`:'';
+  return `<article class="payment-card"><header><div><small>PAGAMENTO #${escapeHtml(payment.numero)} · ${escapeHtml(payment.documentoBancario)}</small><h3>${moneyBR(payment.valorTotal)}</h3></div><span class="payment-status">${escapeHtml(payment.status)}</span></header><ul>${items}</ul>${payment.nfseNome?`<p>NFS-e: <strong>${escapeHtml(payment.nfseNome)}</strong> · ${escapeHtml(payment.nfseStatus||'')}</p>`:''}${invoice}${received?`<p>Pago em ${formatDate(payment.pagoEm)}</p>`:''}</article>`;
+}
+
+async function loadOperation(view='PENDENTES_ACEITE'){
+  setupOperations();
+  const list=$('#operation-list'),message=$('#operation-message'),filter=$('#operation-history-filter');
+  filter.hidden=view!=='RECEBIDOS';message.textContent='';list.innerHTML='<p>Carregando…</p>';
+  try{
+    if(['PENDENTES_ACEITE','PENDENTES_EXECUCAO','PENDENTES_REPASSE'].includes(view)){
+      const data=await api(`/api/montadores/servicos?view=${view}`);list.innerHTML=data.servicos.length?data.servicos.map(item=>serviceCard(item,view)).join(''):'<p class="operation-empty">Nenhum serviço nesta situação.</p>';
+    }else{
+      const query=view==='RECEBIDOS'?`?view=RECEBIDOS&historico=1&de=${encodeURIComponent($('#operation-from').value)}&ate=${encodeURIComponent($('#operation-to').value)}`:'';
+      const data=await api('/api/montadores/pagamentos'+query);list.innerHTML=data.pagamentos.length?data.pagamentos.map(item=>paymentCard(item,view==='RECEBIDOS')).join(''):'<p class="operation-empty">Nenhum pagamento nesta situação.</p>';
+    }
+  }catch(error){list.innerHTML='';message.textContent=error.message}
+}
+
+async function operationClick(event){
+  const button=event.target.closest('[data-service-action]');if(!button)return;
+  const original=button.textContent,action=button.dataset.serviceAction;button.disabled=true;button.textContent=action==='ACEITAR'?'Aceitando…':'Recusando…';
+  try{const data=await api('/api/montadores/servicos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:button.dataset.id,acao:action,operacaoId:operationId()})});$('#operation-message').className='form-message success';$('#operation-message').textContent=data.mensagem;await loadOperation('PENDENTES_ACEITE')}catch(error){$('#operation-message').className='form-message';$('#operation-message').textContent=error.message;button.disabled=false;button.textContent=original}
+}
+
+async function invoiceSubmit(event){
+  const formElement=event.target.closest('.payment-invoice-form');if(!formElement)return;event.preventDefault();
+  const file=formElement.elements.file.files[0],button=formElement.querySelector('button'),message=formElement.querySelector('.form-message');if(!file)return;button.disabled=true;message.textContent='Enviando…';
+  try{await api('/api/montadores/pagamento-documento',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pagamentoId:formElement.dataset.paymentId,valorTotal:formElement.elements.valorTotal.value,fileName:file.name,mimeType:file.type,data:await fileBase64(file)})});message.className='form-message success';message.textContent='NFS-e enviada para análise.';await loadOperation('PAGAMENTOS')}catch(error){message.className='form-message';message.textContent=error.message;button.disabled=false}
+}
+
+const loadBaseStatus=loadStatus;
+loadStatus=async function(){await loadBaseStatus();const data=await api('/api/montadores/status');if(data.montador.statusCadastro==='APROVADO'){setupOperations();await loadOperation('PENDENTES_ACEITE')}};

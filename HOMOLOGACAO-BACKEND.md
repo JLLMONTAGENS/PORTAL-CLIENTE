@@ -199,3 +199,44 @@ O servidor SMTP padrão segue a configuração oficial da Locaweb: `email-ssl.co
 - `npm install`
 - `npm test`
 - `npm audit --omit=dev`
+## Operação do montador e pagamentos agrupados
+
+Antes de testar os serviços, fotos, NFS-e ou pagamentos, execute no banco **exclusivo de homologação**, nesta ordem:
+
+1. `database/migracao-area-montador.sql` (se ainda não tiver sido executada);
+2. `database/migracao-operacao-montador.sql`.
+
+A segunda migração cria os estados de aceite e execução, evidências fotográficas, fila idempotente para operação offline, dispositivos, notificações push, pagamentos agrupados, vínculos da NFS-e e controle de arquivos CNAB.
+
+### Aplicativo Flutter
+
+O código está em `montador-app/`. A URL padrão aponta para a homologação e pode ser substituída na compilação:
+
+```text
+flutter build apk --release --dart-define=API_BASE_URL=https://SEU-ENDERECO-DE-HOMOLOGACAO
+```
+
+O aplicativo mantém localmente somente os serviços ainda ativos e os cinco repasses pagos mais recentes. Ações, fotos e NFS-e feitas sem internet entram em uma fila local e são sincronizadas automaticamente quando a conexão retorna. O histórico completo permanece no servidor e pode ser consultado pela área web.
+
+### Push Firebase
+
+Configure na Vercel da **homologação** a variável `FIREBASE_SERVICE_ACCOUNT_JSON` com o JSON completo da conta de serviço do projeto Firebase. Cadastre também os arquivos oficiais dos aplicativos:
+
+- Android: `montador-app/android/app/google-services.json`;
+- iOS: `montador-app/ios/Runner/GoogleService-Info.plist`, além da chave APNs no Firebase.
+
+Sem essa configuração, a atribuição do atendimento não falha: a notificação fica registrada como `AGUARDANDO_CONFIGURACAO`. Depois de configurado, novas atribuições são enviadas pelo Firebase Cloud Messaging e auditadas em `notificacoes_push_montador`.
+
+### CNAB 240
+
+A tela e os estados de pagamento estão implementados, mas a geração de remessa e a leitura de retorno permanecem bloqueadas até existir um adaptador homologado para o banco escolhido. Para concluí-lo são necessários o banco, o convênio, a carteira/serviço, a versão do leiaute CNAB 240 e exemplos de remessa e retorno aprovados pelo banco. O sistema retorna erro controlado em vez de produzir um arquivo bancário possivelmente inválido.
+
+### Verificação funcional mínima
+
+1. atribua um orçamento a um montador aprovado;
+2. confira a proposta no app, ainda sem nome, telefone ou endereço completo do cliente;
+3. aceite e confirme que os dados completos são liberados e a jornada do cliente fica verde;
+4. inicie o deslocamento, registre a chegada, anexe ao menos uma foto e finalize pelo app;
+5. no admin, selecione atendimentos concluídos e gere os pagamentos — o agrupamento deve ocorrer por montador;
+6. envie uma única NFS-e pelo valor total do pagamento, revise-a e faça a baixa manual de teste;
+7. confirme que todos os atendimentos do pagamento passaram para pagos e que o app mostra o repasse entre os cinco mais recentes.

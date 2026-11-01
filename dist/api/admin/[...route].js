@@ -14,19 +14,21 @@ const handlers={
   staff:()=>require('../../_admin-legacy/staff'),
   users:()=>require('../../_admin-legacy/users'),
   assemblers:()=>require('../../_admin-legacy/assemblers'),
-  quote:()=>require('../../_admin-legacy/quote'),
-  quotes:()=>require('../../_admin-legacy/quotes'),
-  'quote-management':()=>require('../../_admin-legacy/quote-management'),
+  quote:()=>require('../../../api/admin/quote'),
+  quotes:()=>require('../../../api/admin/quotes'),
+  'quote-management':()=>require('../../../api/admin/quote-management'),
   'payment-settings':()=>require('../../_admin-legacy/payment-settings'),
   'payment-test':()=>require('../../_admin-legacy/payment-test'),
   'payment-link':()=>require('../../_admin-legacy/payment-link'),
-  'assign-assembler':()=>require('../../_admin-legacy/assign-assembler'),
+  'assign-assembler':()=>require('../../../api/admin/assign-assembler'),
   finalize:()=>require('../../_admin-legacy/finalize'),
   cancel:()=>require('../../_admin-legacy/cancel'),
   'montador-cadastros':()=>require('../../_admin-legacy/montador-cadastros'),
   'montador-documento':()=>require('../../_admin-legacy/montador-documento'),
   'montador-documento-revisao':()=>require('../../_admin-legacy/montador-documento-revisao'),
-  'smtp-settings':()=>require('../../_admin-legacy/smtp-settings')
+  'smtp-settings':()=>require('../../_admin-legacy/smtp-settings'),
+  'montador-pagamentos':()=>require('../../../api/admin/montador-pagamentos'),
+  'montador-cnab':()=>require('../../../api/admin/montador-cnab')
 };
 
 module.exports=(req,res)=>{

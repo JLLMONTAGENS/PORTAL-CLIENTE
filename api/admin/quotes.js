@@ -8,7 +8,7 @@ module.exports=async function handler(req,res){
   try{
     const sql=getDatabase();
     const rows=await sql`
-      SELECT o.*,m.nome AS montador_nome,m.percentual_repasse,
+      SELECT o.*,m.nome AS montador_nome,m.percentual_repasse,pmi.pagamento_id,
              gerador.nome_exibicao AS gerado_por_nome,a.atendente_id,a.status AS atendimento_status,
              atendente.nome_exibicao AS atendente_nome
       FROM orcamentos o
@@ -16,6 +16,7 @@ module.exports=async function handler(req,res){
       LEFT JOIN montadores m ON m.id=o.montador_id
       LEFT JOIN usuarios_atendimento gerador ON gerador.id=o.gerado_por
       LEFT JOIN usuarios_atendimento atendente ON atendente.id=a.atendente_id
+      LEFT JOIN pagamentos_montador_itens pmi ON pmi.orcamento_id=o.id
       ORDER BY o.agendado_para DESC,o.criado_em DESC LIMIT 1000`;
     const [montadores,atendentes]=await Promise.all([
       sql`SELECT id,nome,telefone,percentual_repasse FROM montadores WHERE ativo=TRUE ORDER BY nome`,
