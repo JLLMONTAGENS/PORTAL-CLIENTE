@@ -201,6 +201,14 @@ O servidor SMTP padrão segue a configuração oficial da Locaweb: `email-ssl.co
 - `npm audit --omit=dev`
 ## Operação do montador e pagamentos agrupados
 
+### Acesso do aplicativo à homologação
+
+O endereço configurado no APK precisa aceitar acesso público às APIs. Se a Vercel responder `401 Protected deployment`, a autenticação da própria Vercel está interceptando a chamada antes do login do montador. A solução recomendada é usar um domínio exclusivo e público de homologação ou liberar a proteção somente para essa implantação. Como alternativa temporária, a compilação aceita `--dart-define=VERCEL_PROTECTION_BYPASS=...`, usando um segredo de bypass criado na Vercel; esse valor não deve ser reutilizado em produção nem distribuído fora da equipe de testes.
+
+O login possui “Manter conectado”. Quando selecionado, a sessão fica guardada no armazenamento seguro do aparelho por até 30 dias; sem a seleção, ela existe apenas enquanto o aplicativo estiver aberto. O botão “Sair” elimina a sessão e o cache operacional local.
+
+O fluxo “Esqueci minha senha” envia um link de uso único, válido por 30 minutos, ao e-mail cadastrado. O token é armazenado apenas como hash. O envio depende do SMTP ativo no painel administrativo e de `PUBLIC_SITE_URL` apontando para o endereço público da homologação.
+
 Antes de testar os serviços, fotos, NFS-e ou pagamentos, execute no banco **exclusivo de homologação**, nesta ordem:
 
 1. `database/migracao-area-montador.sql` (se ainda não tiver sido executada);

@@ -17,6 +17,9 @@ const apiBase = String.fromEnvironment(
   'API_BASE_URL',
   defaultValue: 'https://portal-cliente-git-homologacao-jean-melo.vercel.app',
 );
+const vercelProtectionBypass = String.fromEnvironment(
+  'VERCEL_PROTECTION_BYPASS',
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,9 +108,25 @@ class LocalStore {
 class ApiClient {
   static const secure = FlutterSecureStorage();
   String? cookie;
+  bool keepConnected = false;
   Future<bool> restore() async {
+    keepConnected = await secure.read(key: 'keep_connected') == 'true';
+    if (!keepConnected) {
+      await secure.delete(key: 'session_cookie');
+      return false;
+    }
     cookie = await secure.read(key: 'session_cookie');
     return cookie?.isNotEmpty == true;
+  }
+
+  Future<void> setKeepConnected(bool value) async {
+    keepConnected = value;
+    if (value) {
+      await secure.write(key: 'keep_connected', value: 'true');
+    } else {
+      await secure.delete(key: 'keep_connected');
+      await secure.delete(key: 'session_cookie');
+    }
   }
 
   Future<Map<String, dynamic>> request(
@@ -119,6 +138,9 @@ class ApiClient {
       'Accept': 'application/json',
       'X-JLL-App': 'montador-mobile',
     };
+    if (vercelProtectionBypass.isNotEmpty) {
+      headers['x-vercel-protection-bypass'] = vercelProtectionBypass;
+    }
     if (cookie != null) headers['Cookie'] = cookie!;
     if (body != null) headers['Content-Type'] = 'application/json';
     final uri = Uri.parse('$apiBase$route');
@@ -128,14 +150,28 @@ class ApiClient {
     final setCookie = response.headers['set-cookie'];
     if (setCookie != null) {
       cookie = setCookie.split(';').first;
-      await secure.write(key: 'session_cookie', value: cookie);
+      if (keepConnected) {
+        await secure.write(key: 'session_cookie', value: cookie);
+      }
     }
-    final data = response.body.isEmpty
-        ? <String, dynamic>{}
-        : (jsonDecode(response.body) as Map<String, dynamic>);
+    Map<String, dynamic> data = <String, dynamic>{};
+    if (response.body.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map) data = Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      final protectedDeployment =
+          response.statusCode == 401 &&
+          data['message']?.toString().toLowerCase() ==
+              'protected deployment';
       throw ApiException(
-        data['error']?.toString() ?? 'Não foi possível concluir.',
+        protectedDeployment
+            ? 'A homologação está protegida pela Vercel. Libere o acesso da implantação ou configure o código de acesso da homologação.'
+            : data['error']?.toString() ??
+                  data['message']?.toString() ??
+                  'Não foi possível concluir.',
         response.statusCode,
       );
     }
@@ -148,6 +184,8 @@ class ApiClient {
     } catch (_) {}
     cookie = null;
     await secure.delete(key: 'session_cookie');
+    await secure.delete(key: 'keep_connected');
+    keepConnected = false;
   }
 }
 
@@ -215,7 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final formKey = GlobalKey<FormState>(),
       email = TextEditingController(),
       password = TextEditingController();
-  bool loading = false;
+  bool loading = false, keepConnected = true;
   String? error;
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) return;
@@ -224,15 +262,81 @@ class _LoginScreenState extends State<LoginScreen> {
       error = null;
     });
     try {
+      await widget.api.setKeepConnected(keepConnected);
       await widget.api.request(
         '/api/montadores/login',
         method: 'POST',
-        body: {'email': email.text.trim(), 'senha': password.text},
+        body: {
+          'email': email.text.trim(),
+          'senha': password.text,
+          'manterConectado': keepConnected,
+        },
       );
       widget.onLogin();
     } catch (e) {
       setState(() => error = e.toString());
     } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> forgotPassword() async {
+    final controller = TextEditingController(text: email.text.trim());
+    final requested = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Redefinir senha'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Informe o e-mail do cadastro. Enviaremos um link válido por 30 minutos.',
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.emailAddress,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'E-mail',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+    if (requested != true || controller.text.trim().isEmpty) return;
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final data = await widget.api.request(
+        '/api/montadores/senha-solicitar',
+        method: 'POST',
+        body: {'email': controller.text.trim()},
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(data['mensagem'].toString())));
+      }
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      controller.dispose();
       if (mounted) setState(() => loading = false);
     }
   }
@@ -290,6 +394,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         validator: (v) =>
                             (v?.length ?? 0) >= 6 ? null : 'Informe sua senha.',
                       ),
+                      CheckboxListTile(
+                        value: keepConnected,
+                        onChanged: loading
+                            ? null
+                            : (value) => setState(
+                                () => keepConnected = value ?? false,
+                              ),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: const Text('Manter conectado'),
+                        subtitle: const Text(
+                          'Não será necessário entrar novamente neste aparelho.',
+                        ),
+                      ),
                       if (error != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 12),
@@ -302,6 +420,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       FilledButton(
                         onPressed: loading ? null : submit,
                         child: Text(loading ? 'Entrando…' : 'Entrar'),
+                      ),
+                      TextButton(
+                        onPressed: loading ? null : forgotPassword,
+                        child: const Text('Esqueci minha senha'),
                       ),
                     ],
                   ),
@@ -499,7 +621,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
           IconButton(onPressed: sync, icon: const Icon(Icons.sync)),
-          IconButton(onPressed: logout, icon: const Icon(Icons.logout)),
+          TextButton.icon(
+            onPressed: logout,
+            icon: const Icon(Icons.logout),
+            label: const Text('Sair'),
+          ),
         ],
       ),
       body: Column(

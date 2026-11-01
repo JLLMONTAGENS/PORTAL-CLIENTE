@@ -78,6 +78,17 @@ CREATE TABLE IF NOT EXISTS notificacoes_push_montador (
 );
 CREATE INDEX IF NOT EXISTS notificacoes_push_montador_idx ON notificacoes_push_montador(montador_id,status,criado_em DESC);
 
+CREATE TABLE IF NOT EXISTS redefinicoes_senha_montador (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  montador_id UUID NOT NULL REFERENCES montadores(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expira_em TIMESTAMPTZ NOT NULL,
+  usado_em TIMESTAMPTZ,
+  solicitado_ip TEXT,
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS redefinicoes_senha_montador_idx ON redefinicoes_senha_montador(montador_id,criado_em DESC);
+
 CREATE TABLE IF NOT EXISTS pagamentos_montador (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   numero BIGSERIAL UNIQUE,

@@ -10,6 +10,8 @@ const handlers={
   documento:require('../../../api/montadores/documento'),
   login:require('../../../api/montadores/login'),
   logout:require('../../../api/montadores/logout'),
+  'senha-solicitar':require('../../../api/montadores/senha-solicitar'),
+  'senha-redefinir':require('../../../api/montadores/senha-redefinir'),
   status:require('../../../api/montadores/status'),
   servicos:require('../../../api/montadores/servicos'),
   'servico-foto':require('../../../api/montadores/servico-foto'),
