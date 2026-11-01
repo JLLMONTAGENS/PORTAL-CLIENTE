@@ -44,3 +44,14 @@ A central de atendimento web deve evoluir para um aplicativo para iOS e Android 
 - Finalizados não podem ser cancelados; o orçamento associado passa a `CANCELADO` e não retorna aos totais financeiros.
 - Histórico de cancelados separado no navegador, com acesso somente para consulta; não há fila separada no APK.
 - Mensagens, anexos, transferências e webhooks de pagamento são bloqueados depois do cancelamento.
+
+## Aplicativo e operação do montador — 31/10/2026
+
+- Aplicativo exclusivo do montador recomendado em Flutter para Android e iOS, com push, câmera, cache operacional criptografado e sincronização offline.
+- Aceite do serviço antes da liberação dos dados pessoais e do endereço completo do cliente.
+- Jornada do cliente diferencia profissional atribuído de profissional confirmado.
+- Fotos obrigatórias para concluir o serviço pelo aplicativo móvel.
+- Portal web para aceite e consulta; finalização exclusiva no aplicativo.
+- Pagamentos agrupados por montador, NFS-e vinculada ao valor total do borderô, aprovação administrativa e acompanhamento de status.
+- Remessa e retorno CNAB 240, conciliação por identificador do pagamento e alternativa de baixa manual auditada.
+- O detalhamento completo está em `ESCOPO-APLICATIVO-MONTADOR.md`.
