@@ -1,3 +1,16 @@
-.tracking-message:has(.chat-quote-summary){width:96%;max-width:96%;padding:0;overflow:hidden;border:1px solid #dfe7e5;box-shadow:0 6px 18px rgba(26,43,76,.08)}
-.tracking-message:has(.chat-quote-summary)>small{margin:0;padding:0 12px 9px;background:#fff5eb}
-@media(max-width:380px){.tracking-message:has(.chat-quote-summary){width:100%;max-width:100%}}
+.tracking-message:has(.tracking-quote-message-card){display:block;width:96%;max-width:96%;padding:0;overflow:visible;border:1px solid #dfe7e5;border-radius:12px;background:#fff;box-shadow:0 6px 18px rgba(26,43,76,.08)}
+.tracking-quote-message-card{display:block;width:100%;min-height:120px;overflow:hidden;border-radius:11px;background:#fff;color:#1a2b4c}
+.tracking-quote-message-header{display:flex;align-items:center;gap:10px;padding:13px 14px;background:#1a2b4c;color:#fff}
+.tracking-quote-message-header>span{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;border-radius:50%;background:#e67e22;color:#fff;font-weight:900}
+.tracking-quote-message-header strong,.tracking-quote-message-header em{display:block}
+.tracking-quote-message-header strong{font-size:.92rem}
+.tracking-quote-message-header em{margin-top:1px;color:#dfe6f2;font-size:.66rem;font-style:normal}
+.tracking-quote-message-greeting{margin:0;padding:13px 14px 5px;color:#1a2b4c;font-weight:750}
+.tracking-quote-message-card dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0;padding:10px 14px 14px}
+.tracking-quote-message-row{min-width:0;padding:9px;border-radius:8px;background:#f3f6f8}
+.tracking-quote-message-row.wide{grid-column:1/-1}
+.tracking-quote-message-row dt{margin-bottom:3px;color:#697a80;font-size:.62rem;font-weight:800;letter-spacing:.045em;text-transform:uppercase}
+.tracking-quote-message-row dd{margin:0;color:#233f48;font-size:.78rem;font-weight:700;overflow-wrap:anywhere}
+.tracking-quote-message-footer{margin:0;padding:11px 14px;border-top:1px solid #f3dcc7;background:#fff5eb;color:#6b4b31;font-size:.72rem;line-height:1.45}
+.tracking-message:has(.tracking-quote-message-card)>small{display:block;margin:0;padding:0 12px 9px;background:#fff5eb;color:#718092}
+@media(max-width:380px){.tracking-message:has(.tracking-quote-message-card){width:100%;max-width:100%}.tracking-quote-message-card dl{grid-template-columns:1fr}.tracking-quote-message-row.wide{grid-column:auto}}
