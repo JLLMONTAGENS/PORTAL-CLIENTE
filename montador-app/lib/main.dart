@@ -143,7 +143,15 @@ class ApiClient {
     }
     if (cookie != null) headers['Cookie'] = cookie!;
     if (body != null) headers['Content-Type'] = 'application/json';
-    final uri = Uri.parse('$apiBase$route');
+    var uri = Uri.parse('$apiBase$route');
+    if (vercelProtectionBypass.isNotEmpty) {
+      uri = uri.replace(
+        queryParameters: {
+          ...uri.queryParameters,
+          'x-vercel-protection-bypass': vercelProtectionBypass,
+        },
+      );
+    }
     final response = method == 'GET'
         ? await http.get(uri, headers: headers)
         : await http.post(uri, headers: headers, body: jsonEncode(body ?? {}));
@@ -164,11 +172,12 @@ class ApiClient {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final protectedDeployment =
           response.statusCode == 401 &&
-          data['message']?.toString().toLowerCase() ==
-              'protected deployment';
+          response.body.toLowerCase().contains('protected deployment');
       throw ApiException(
         protectedDeployment
-            ? 'A homologação está protegida pela Vercel. Libere o acesso da implantação ou configure o código de acesso da homologação.'
+            ? vercelProtectionBypass.isEmpty
+                  ? 'Este APK foi compilado sem o bypass da Vercel. Gere uma nova versão com o segredo da homologação.'
+                  : 'O bypass foi enviado, mas a Vercel o rejeitou. Confirme o valor do segredo e faça um novo deploy da homologação após criar ou trocar o bypass.'
             : data['error']?.toString() ??
                   data['message']?.toString() ??
                   'Não foi possível concluir.',
@@ -370,6 +379,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const Text(
                         'Serviços, execução e repasses em um só lugar.',
+                      ),
+                      Text(
+                        vercelProtectionBypass.isEmpty
+                            ? 'Homologação · bypass não configurado'
+                            : 'Homologação · bypass configurado',
+                        style: const TextStyle(
+                          color: Colors.blueGrey,
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(height: 22),
                       TextFormField(
