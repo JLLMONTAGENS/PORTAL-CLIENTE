@@ -20,6 +20,8 @@ function syncConversationMessages(box,messages,conversationId,{forceLatest=false
 const state={status:'__NAO_RESPONDIDAS__',lastAttendanceStatus:'__NAO_RESPONDIDAS__',user:null,currentView:'attendances',currentConversation:null,staff:[],assemblers:[],users:[],quotes:[],quoteAssemblers:[],quoteAttendants:[],paymentSettings:[],currentQuote:null,queueSignature:'',conversationSignature:'',quotesSignature:'',queueCache:{},queueRequests:{},conversationCache:{},conversationRequests:{},prefetchedQueues:false,conversationLoading:false,quotesLoading:false,conversationTask:null,queueTimer:null,conversationTimer:null};
 const sessionLoading=$('#session-loading'),loginView=$('#login-view'),dashboard=$('#dashboard-view'),list=$('#list'),conversationPane=$('#conversation-pane'),dashboardError=$('#dashboard-error');
 const mediaViewer=$('#media-viewer'),mediaViewerImage=$('#media-viewer-image');
+const adminMenuToggle=$('#admin-menu-toggle');
+adminMenuToggle?.addEventListener('click',()=>{const open=dashboard.classList.toggle('sidebar-open');adminMenuToggle.setAttribute('aria-expanded',String(open))});
 const QUEUE_REFRESH_MS=4000,CONVERSATION_REFRESH_MS=3000;
 const isAttendanceView=()=>['attendances','finished','cancelled'].includes(state.currentView);
 
@@ -38,7 +40,7 @@ function applySearchFilter(){const term=$('#search').value.trim().toLowerCase();
 function stopLiveUpdates(){clearInterval(state.queueTimer);clearInterval(state.conversationTimer);state.queueTimer=null;state.conversationTimer=null}
 function startLiveUpdates(){stopLiveUpdates();state.queueTimer=setInterval(()=>{if(!document.hidden&&state.user){loadConversations({silent:true});if(state.currentView==='quotes')loadQuotes({silent:true})}},QUEUE_REFRESH_MS);state.conversationTimer=setInterval(()=>{if(!document.hidden&&state.user&&state.currentConversation&&isAttendanceView())openConversation(state.currentConversation,{initial:false,silent:true,forceNetwork:true})},CONVERSATION_REFRESH_MS)}
 
-const QUEUE_STATUSES=['__NAO_RESPONDIDAS__','PENDENTE','GEROU_ORCAMENTO','ATRIBUIDO_MONTADOR','SERVICO_FINALIZADO','CANCELADO'];
+const QUEUE_STATUSES=['__NAO_RESPONDIDAS__','PENDENTE','GEROU_ORCAMENTO','ATRIBUIDO_MONTADOR','__RECUSADOS_MONTADOR__','SERVICO_FINALIZADO','CANCELADO'];
 
 function renderConversationQueue(rows,{updateSignature=true}={}){
   $('#summary').textContent=`${rows.length} atendimento${rows.length===1?'':'s'} encontrado${rows.length===1?'':'s'}`;
@@ -47,7 +49,8 @@ function renderConversationQueue(rows,{updateSignature=true}={}){
   list.innerHTML=rows.length?rows.map(row=>{
     const unanswered=row.ultimo_tipo_remetente==='CLIENTE'&&!['SERVICO_FINALIZADO','CANCELADO'].includes(row.status);
     const canClaim=!row.atendente_id||row.atendente_id===state.user.id||state.user.perfil==='ADMINISTRADOR';
-    return `<article data-id="${row.id}" class="attendance-card ${unanswered?'unanswered':''} ${row.id===state.currentConversation?'active':''}" ${row.id===state.currentConversation?'aria-current="true"':''}><div><h2>Atendimento #${row.numero_atendimento} · ${escapeHtml(row.nome_cliente)}</h2><p>${escapeHtml(row.telefone)} · atualizado em ${formatDate(row.atualizado_em)}</p><p>${row.atendente_nome?`Responsável: ${escapeHtml(row.atendente_nome)}`:'Na fila · aguardando atendente'}</p><p>${row.detalhes_servico?escapeHtml(row.detalhes_servico):'Sem detalhes de serviço informados'} · ${formatMoney(row.valor_servico)}</p></div><div class="card-actions"><span class="status status-${String(row.status||'').toLowerCase()}">${unanswered?'● Não respondida · ':''}${labels[row.status]||escapeHtml(row.status)}</span>${canClaim&&row.atendente_id!==state.user.id?`<button class="claim-button" data-claim="${row.id}">${state.user.perfil==='ADMINISTRADOR'&&row.atendente_id?'Transferir para mim':'Assumir atendimento'}</button>`:''}</div></article>`;
+    const rejected=state.status==='__RECUSADOS_MONTADOR__';
+    return `<article data-id="${row.id}" class="attendance-card ${unanswered?'unanswered':''} ${rejected?'assembler-rejected':''} ${row.id===state.currentConversation?'active':''}" ${row.id===state.currentConversation?'aria-current="true"':''}><div><h2>Atendimento #${row.numero_atendimento} · ${escapeHtml(row.nome_cliente)}</h2><p>${escapeHtml(row.telefone)} · atualizado em ${formatDate(row.atualizado_em)}</p><p>${row.atendente_nome?`Responsável: ${escapeHtml(row.atendente_nome)}`:'Na fila · aguardando atendente'}</p><p>${row.detalhes_servico?escapeHtml(row.detalhes_servico):'Sem detalhes de serviço informados'} · ${formatMoney(row.valor_servico)}</p>${rejected?`<p class="rejection-note">Recusado pelo profissional em ${formatDate(row.recusado_montador_em)}. Atribua outro montador.</p>`:''}</div><div class="card-actions"><span class="status ${rejected?'status-assembler-rejected':`status-${String(row.status||'').toLowerCase()}`}">${rejected?'Recusado pelo montador':`${unanswered?'● Não respondida · ':''}${labels[row.status]||escapeHtml(row.status)}`}</span>${canClaim&&row.atendente_id!==state.user.id?`<button class="claim-button" data-claim="${row.id}">${state.user.perfil==='ADMINISTRADOR'&&row.atendente_id?'Transferir para mim':'Assumir atendimento'}</button>`:''}</div></article>`;
   }).join(''):'<div class="empty">Nenhum atendimento neste filtro.</div>';
   state.queueSignature=signature;applySearchFilter();scheduleConversationPrefetch(rows);
 }
@@ -86,7 +89,7 @@ async function loadConversations({silent=false,status=state.status}={}){
     $('#cancelled-menu').hidden=APP_MODE;
     $('#session-description').textContent=`${state.user.nomeExibicao||state.user.login} · ${state.user.perfil==='ADMINISTRADOR'?'Administrador':'Atendente'}`;
     const counts=Object.fromEntries((data.contagens||[]).map(item=>[item.status,item.quantidade]));
-    document.querySelectorAll('[data-count]').forEach(item=>item.textContent=item.dataset.count==='naoRespondidas'?(data.naoRespondidas||0):(counts[item.dataset.count]||0));
+    document.querySelectorAll('[data-count]').forEach(item=>item.textContent=item.dataset.count==='naoRespondidas'?(data.naoRespondidas||0):item.dataset.count==='recusadosMontador'?(data.recusadosMontador||0):(counts[item.dataset.count]||0));
     if(requestedStatus===state.status)renderConversationQueue(state.queueCache[requestedStatus]);
     prefetchQueues();return true;
   }catch(error){if(!silent&&requestedStatus===state.status){list.innerHTML='';showError(error)}if(error.status===401||error.message.includes('Sessão')){stopLiveUpdates();dashboard.hidden=true;loginView.hidden=false;state.user=null}return false}
@@ -172,6 +175,7 @@ async function openConversation(id,{initial=true,restoreScrollTop=null,silent=fa
 }
 
 function switchView(view){
+  dashboard.classList.remove('sidebar-open');adminMenuToggle?.setAttribute('aria-expanded','false');
   if(APP_MODE&&view!=='attendances')view='attendances';
   const attendanceView=['attendances','finished','cancelled'].includes(view);
   if(!attendanceView)document.body.classList.remove('mobile-conversation-open');

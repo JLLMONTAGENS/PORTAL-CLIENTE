@@ -839,10 +839,20 @@ class _ServiceCardState extends State<ServiceCard> {
                 icon: Icons.phone_outlined,
                 text: '${d['telefoneCliente']}',
               ),
+                  if ('${d['telefoneAlternativo'] ?? ''}'.trim().isNotEmpty)
+                    InfoRow(
+                      icon: Icons.phone_in_talk_outlined,
+                      text: 'Alternativo: ${d['telefoneAlternativo']}',
+                    ),
               InfoRow(
                 icon: Icons.home_outlined,
                 text: '${d['endereco']} · ${d['bairro']} · ${d['cidade']}',
               ),
+                  if ('${d['referencia'] ?? ''}'.trim().isNotEmpty)
+                    InfoRow(
+                      icon: Icons.near_me_outlined,
+                      text: 'Referência: ${d['referencia']}',
+                    ),
             ] else
               const Padding(
                 padding: EdgeInsets.only(top: 8),
