@@ -788,13 +788,14 @@ class ServiceCard extends StatefulWidget {
 }
 
 class _ServiceCardState extends State<ServiceCard> {
-  bool busy = false;
+  bool busy = false, locallyCompleted = false;
   late int photoCount;
   final picker = ImagePicker();
   @override
   void initState() {
     super.initState();
     photoCount = (widget.data['fotos'] as num? ?? 0).toInt();
+    locallyCompleted = widget.data['status'] == 'CONCLUIDO';
   }
 
   @override
@@ -802,12 +803,13 @@ class _ServiceCardState extends State<ServiceCard> {
     super.didUpdateWidget(oldWidget);
     final synchronized = (widget.data['fotos'] as num? ?? 0).toInt();
     if (synchronized > photoCount) photoCount = synchronized;
+    if (widget.data['status'] == 'CONCLUIDO') locallyCompleted = true;
   }
 
-  Future<void> act(String action) async {
+  Future<bool> act(String action) async {
     setState(() => busy = true);
     try {
-      await widget.action('/api/montadores/servicos', {
+      return await widget.action('/api/montadores/servicos', {
         'id': widget.data['id'],
         'acao': action,
         'operacaoId': '${DateTime.now().microsecondsSinceEpoch}-$action',
@@ -829,7 +831,8 @@ class _ServiceCardState extends State<ServiceCard> {
       );
       return;
     }
-    await act('FINALIZAR');
+    final completed = await act('FINALIZAR');
+    if (completed && mounted) setState(() => locallyCompleted = true);
   }
 
   Future<void> photo() async {
@@ -971,41 +974,52 @@ class _ServiceCardState extends State<ServiceCard> {
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(11),
                       decoration: BoxDecoration(
-                        color: photoCount > 0
+                        color: locallyCompleted || photoCount > 0
                             ? const Color(0xFFE8F7EE)
                             : const Color(0xFFFFF1E6),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        photoCount > 0
+                        locallyCompleted
+                            ? 'Serviço concluído neste aparelho. Aguardando conexão para sincronizar.'
+                            : photoCount > 0
                             ? '$photoCount imagem(ns) anexada(s). O serviço pode ser finalizado.'
                             : 'Obrigatório: anexe ao menos uma imagem para finalizar o serviço.',
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: busy
-                              ? null
-                              : () => act('CONFIRMAR_CHEGADA'),
-                          icon: const Icon(Icons.location_on),
-                          label: const Text('Cheguei ao local'),
+                    if (locallyCompleted)
+                      FilledButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.cloud_sync_outlined),
+                        label: const Text(
+                          'Concluído — aguardando sincronização',
                         ),
-                        OutlinedButton.icon(
-                          onPressed: busy ? null : photo,
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Adicionar foto'),
-                        ),
-                        FilledButton.icon(
-                          onPressed: busy ? null : finish,
-                          icon: const Icon(Icons.check_circle),
-                          label: const Text('Finalizar serviço'),
-                        ),
-                      ],
-                    ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: busy
+                                ? null
+                                : () => act('CONFIRMAR_CHEGADA'),
+                            icon: const Icon(Icons.location_on),
+                            label: const Text('Cheguei ao local'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: busy ? null : photo,
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Adicionar foto'),
+                          ),
+                          FilledButton.icon(
+                            onPressed: busy ? null : finish,
+                            icon: const Icon(Icons.check_circle),
+                            label: const Text('Finalizar serviço'),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
             ],
