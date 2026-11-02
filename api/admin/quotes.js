@@ -10,7 +10,8 @@ module.exports=async function handler(req,res){
     const rows=await sql`
       SELECT o.*,m.nome AS montador_nome,m.percentual_repasse,pmi.pagamento_id,
              gerador.nome_exibicao AS gerado_por_nome,a.atendente_id,a.status AS atendimento_status,
-             atendente.nome_exibicao AS atendente_nome
+             atendente.nome_exibicao AS atendente_nome,
+             COALESCE((SELECT json_agg(json_build_object('id',f.id,'nomeArquivo',f.nome_arquivo,'tipoMime',f.tipo_mime,'capturadoEm',f.capturado_em,'criadoEm',f.criado_em) ORDER BY f.criado_em) FROM fotos_servico_montador f WHERE f.orcamento_id=o.id),'[]'::json) AS fotos_servico
       FROM orcamentos o
       JOIN atendimentos a ON a.id=o.atendimento_id
       LEFT JOIN montadores m ON m.id=o.montador_id

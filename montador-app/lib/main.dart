@@ -588,18 +588,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> queueAction(String route, Map<String, dynamic> body) async {
+  Future<bool> queueAction(String route, Map<String, dynamic> body) async {
     final id =
         body['operacaoId']?.toString() ??
         '${DateTime.now().microsecondsSinceEpoch}';
     body['operacaoId'] = id;
+    String? feedback;
     try {
-      await widget.api.request(route, method: 'POST', body: body);
+      final result = await widget.api.request(
+        route,
+        method: 'POST',
+        body: body,
+      );
+      feedback = result['mensagem']?.toString();
+    } on ApiException catch (e) {
+      if (e.status >= 400 && e.status < 500) {
+        if (mounted) setState(() => message = e.message);
+        return false;
+      }
+      await LocalStore.instance.queue(id, route, body);
+      feedback = 'Ação salva no aparelho. Enviaremos quando a internet voltar.';
     } catch (_) {
       await LocalStore.instance.queue(id, route, body);
-      message = 'Ação salva no aparelho. Enviaremos quando a internet voltar.';
+      feedback = 'Ação salva no aparelho. Enviaremos quando a internet voltar.';
     }
     await sync();
+    if (mounted && feedback != null) setState(() => message = feedback);
+    return true;
   }
 
   Future<void> logout() async {
@@ -733,7 +748,7 @@ class ServiceList extends StatelessWidget {
   });
   final String title, empty;
   final List<dynamic> services;
-  final Future<void> Function(String, Map<String, dynamic>) action;
+  final Future<bool> Function(String, Map<String, dynamic>) action;
   final bool pending;
   @override
   Widget build(BuildContext context) => ListView(
@@ -766,7 +781,7 @@ class ServiceCard extends StatefulWidget {
     required this.pending,
   });
   final Map<String, dynamic> data;
-  final Future<void> Function(String, Map<String, dynamic>) action;
+  final Future<bool> Function(String, Map<String, dynamic>) action;
   final bool pending;
   @override
   State<ServiceCard> createState() => _ServiceCardState();
@@ -774,15 +789,47 @@ class ServiceCard extends StatefulWidget {
 
 class _ServiceCardState extends State<ServiceCard> {
   bool busy = false;
+  late int photoCount;
   final picker = ImagePicker();
+  @override
+  void initState() {
+    super.initState();
+    photoCount = (widget.data['fotos'] as num? ?? 0).toInt();
+  }
+
+  @override
+  void didUpdateWidget(covariant ServiceCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final synchronized = (widget.data['fotos'] as num? ?? 0).toInt();
+    if (synchronized > photoCount) photoCount = synchronized;
+  }
+
   Future<void> act(String action) async {
     setState(() => busy = true);
-    await widget.action('/api/montadores/servicos', {
-      'id': widget.data['id'],
-      'acao': action,
-      'operacaoId': '${DateTime.now().microsecondsSinceEpoch}-$action',
-    });
-    if (mounted) setState(() => busy = false);
+    try {
+      await widget.action('/api/montadores/servicos', {
+        'id': widget.data['id'],
+        'acao': action,
+        'operacaoId': '${DateTime.now().microsecondsSinceEpoch}-$action',
+      });
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> finish() async {
+    if (photoCount < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Anexe ao menos uma imagem do serviço antes de finalizar.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    await act('FINALIZAR');
   }
 
   Future<void> photo() async {
@@ -793,14 +840,20 @@ class _ServiceCardState extends State<ServiceCard> {
     );
     if (file == null) return;
     final bytes = await file.readAsBytes();
-    await widget.action('/api/montadores/servico-foto', {
-      'id': widget.data['id'],
-      'fileName': file.name,
-      'mimeType': file.mimeType ?? 'image/jpeg',
-      'data': base64Encode(bytes),
-      'capturadoEm': DateTime.now().toIso8601String(),
-      'operacaoId': '${DateTime.now().microsecondsSinceEpoch}-foto',
-    });
+    setState(() => busy = true);
+    try {
+      final saved = await widget.action('/api/montadores/servico-foto', {
+        'id': widget.data['id'],
+        'fileName': file.name,
+        'mimeType': file.mimeType ?? 'image/jpeg',
+        'data': base64Encode(bytes),
+        'capturadoEm': DateTime.now().toIso8601String(),
+        'operacaoId': '${DateTime.now().microsecondsSinceEpoch}-foto',
+      });
+      if (saved && mounted) setState(() => photoCount += 1);
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   @override
@@ -910,24 +963,48 @@ class _ServiceCardState extends State<ServiceCard> {
                   label: const Text('Iniciar deslocamento'),
                 ),
               if (d['status'] == 'EM_EXECUCAO')
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: busy ? null : () => act('CONFIRMAR_CHEGADA'),
-                      icon: const Icon(Icons.location_on),
-                      label: const Text('Cheguei ao local'),
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(11),
+                      decoration: BoxDecoration(
+                        color: photoCount > 0
+                            ? const Color(0xFFE8F7EE)
+                            : const Color(0xFFFFF1E6),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        photoCount > 0
+                            ? '$photoCount imagem(ns) anexada(s). O serviço pode ser finalizado.'
+                            : 'Obrigatório: anexe ao menos uma imagem para finalizar o serviço.',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
-                    OutlinedButton.icon(
-                      onPressed: busy ? null : photo,
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Adicionar foto'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: busy ? null : () => act('FINALIZAR'),
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Finalizar serviço'),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => act('CONFIRMAR_CHEGADA'),
+                          icon: const Icon(Icons.location_on),
+                          label: const Text('Cheguei ao local'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: busy ? null : photo,
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Adicionar foto'),
+                        ),
+                        FilledButton.icon(
+                          onPressed: busy ? null : finish,
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Finalizar serviço'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -949,7 +1026,7 @@ class PaymentList extends StatelessWidget {
   });
   final String title;
   final List<dynamic> payments;
-  final Future<void> Function(String, Map<String, dynamic>)? action;
+  final Future<bool> Function(String, Map<String, dynamic>)? action;
   final bool received;
   @override
   Widget build(BuildContext context) => ListView(
@@ -981,7 +1058,7 @@ class PaymentCard extends StatefulWidget {
   });
   final Map<String, dynamic> item;
   final bool received;
-  final Future<void> Function(String, Map<String, dynamic>)? action;
+  final Future<bool> Function(String, Map<String, dynamic>)? action;
   @override
   State<PaymentCard> createState() => _PaymentCardState();
 }
