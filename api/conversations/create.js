@@ -1,4 +1,5 @@
 const { getDatabase, normalizePhone, publicConversation } = require('../_db');
+const {notifyAttendance}=require('../admin/_push');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
@@ -13,6 +14,7 @@ module.exports = async function handler(req, res) {
     const conversation = rows[0];
     const welcome = 'Aguarde só mais um pouco, que um especialista irá lhe atender.';
     await sql`INSERT INTO mensagens (atendimento_id, tipo_remetente, texto) VALUES (${conversation.id}, 'SISTEMA', ${welcome})`;
+    await notifyAttendance({atendimentoId:conversation.id,tipo:'NOVO_ATENDIMENTO',titulo:'Novo atendimento',mensagem:`${name} iniciou um atendimento.`}).catch(error=>console.error('Push não enviado',error));
     return res.status(201).json({ existing: false, conversation: publicConversation(conversation), message: welcome });
   } catch (error) {
     console.error('Create conversation failed', error);

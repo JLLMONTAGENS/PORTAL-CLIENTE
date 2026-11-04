@@ -205,7 +205,7 @@ O servidor SMTP padrão segue a configuração oficial da Locaweb: `email-ssl.co
 
 O endereço configurado no APK precisa aceitar acesso público às APIs. Se a Vercel responder `401 Protected deployment`, a autenticação da própria Vercel está interceptando a chamada antes do login do montador. A solução recomendada é usar um domínio exclusivo e público de homologação ou liberar a proteção somente para essa implantação. Como alternativa temporária, a compilação aceita `--dart-define=VERCEL_PROTECTION_BYPASS=...`, usando um segredo de bypass criado na Vercel; esse valor não deve ser reutilizado em produção nem distribuído fora da equipe de testes.
 
-O login possui “Manter conectado”. Quando selecionado, a sessão fica guardada no armazenamento seguro do aparelho por até 30 dias; sem a seleção, ela existe apenas enquanto o aplicativo estiver aberto. O botão “Sair” elimina a sessão e o cache operacional local.
+O login possui “Manter conectado”. Quando selecionado, a sessão persistente não possui expiração automática e fica guardada no armazenamento seguro do aparelho até o profissional usar o botão **Sair**. Sem a seleção, a sessão expira em 12 horas. O botão **Sair** elimina a sessão e o cache operacional local.
 
 O fluxo “Esqueci minha senha” envia um link de uso único, válido por 30 minutos, ao e-mail cadastrado. O token é armazenado apenas como hash. O envio depende do SMTP ativo no painel administrativo e de `PUBLIC_SITE_URL` apontando para o endereço público da homologação.
 
@@ -234,6 +234,35 @@ Configure na Vercel da **homologação** a variável `FIREBASE_SERVICE_ACCOUNT_J
 - iOS: `montador-app/ios/Runner/GoogleService-Info.plist`, além da chave APNs no Firebase.
 
 Sem essa configuração, a atribuição do atendimento não falha: a notificação fica registrada como `AGUARDANDO_CONFIGURACAO`. Depois de configurado, novas atribuições são enviadas pelo Firebase Cloud Messaging e auditadas em `notificacoes_push_montador`.
+
+### Usuários administrativos, recuperação de senha e JLL Atendimento Flutter
+
+Antes de publicar esta evolução, execute no Neon exclusivo de homologação:
+
+```text
+database/migracao-recuperacao-usuarios-push-atendimento.sql
+```
+
+O login do usuário administrativo continua sendo um identificador livre, como `jean.melo`. O e-mail passa a ser um campo separado, obrigatório e exclusivo, utilizado para a recuperação de senha. Usuários legados devem ter o e-mail corrigido no menu **Usuários** antes de usar **Esqueci minha senha**. O link enviado pelo SMTP é de uso único e expira em 30 minutos.
+
+O novo aplicativo Flutter da equipe fica em `atendimento-app/`, substitui a futura evolução do APK Android legado e mantém o mesmo login, sessão e permissões do portal. Ele compila para Android e iOS, abre a central no modo compacto e registra o token FCM do usuário autenticado. Novos atendimentos e novas mensagens do cliente podem gerar push; quando já existe responsável, a mensagem é destinada ao responsável e aos administradores.
+
+O login administrativo também oferece **Manter conectado**. Marcado, o token assinado não expira automaticamente e a sessão permanece no aparelho até o usuário usar **Sair**; desmarcado, continua válida por 12 horas. Desativar o usuário no admin invalida o acesso mesmo quando a sessão persistente estiver salva.
+
+Cadastre dois aplicativos no mesmo projeto Firebase de homologação:
+
+- JLL Montador Android: `br.com.jllmontagens.jll_montador`;
+- JLL Montador iOS: `br.com.jllmontagens.jllMontador`;
+- JLL Atendimento Android: `br.com.jllmontagens.atendimento`;
+- JLL Atendimento iOS: `br.com.jllmontagens.atendimento`.
+
+Em cada pasta Flutter, execute `flutterfire configure` e selecione o aplicativo correspondente. No iOS, ative **Push Notifications** e **Background Modes > Remote notifications** no Xcode e envie ao Firebase uma chave APNs `.p8`. Na Vercel de homologação, mantenha somente uma conta de serviço do projeto na variável privada `FIREBASE_SERVICE_ACCOUNT_JSON`; ela atende aos dois apps. Nunca inclua a conta de serviço no APK, IPA ou Git.
+
+Para compilar o app de atendimento na homologação:
+
+```text
+powershell -ExecutionPolicy Bypass -File .\atendimento-app\compilar-homologacao.ps1
+```
 
 ### CNAB 240
 

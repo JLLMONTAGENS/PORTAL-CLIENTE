@@ -30,3 +30,5 @@ O APK é criado em `build/app/outputs/flutter-apk/app-release.apk`.
 ## Configurações externas
 
 O push exige um projeto Firebase configurado para Android e iOS. A compilação iOS, assinatura e publicação exigem macOS, Xcode e uma conta Apple Developer. Não adicione arquivos de credenciais reais ao Git.
+
+O registro usa Firebase Installation ID. Execute `flutterfire configure` depois de cadastrar Android e iOS no Firebase. No iOS, abra `ios/Runner.xcworkspace`, ative **Push Notifications** e **Background Modes** (`Background fetch` e `Remote notifications`) e envie a chave APNs `.p8` no Firebase.

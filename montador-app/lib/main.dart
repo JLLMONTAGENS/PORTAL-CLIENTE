@@ -511,10 +511,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       await Firebase.initializeApp();
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission();
-      await messaging.register();
-      final token = await messaging.onRegistered.first.timeout(
+      final registration = messaging.onRegistered.first.timeout(
         const Duration(seconds: 12),
       );
+      await messaging.register();
+      final token = await registration;
       if (token.isNotEmpty) {
         await widget.api.request(
           '/api/montadores/dispositivo',
