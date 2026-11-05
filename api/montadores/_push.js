@@ -22,6 +22,21 @@ async function accessToken(credentials){
   cachedToken={value:data.access_token,expiresAt:Date.now()+Number(data.expires_in||3600)*1000};return cachedToken.value;
 }
 
+async function sendToFirebase({credentials,accessToken,target,notification,data}){
+  const url=`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(credentials.project_id)}/messages:send`;
+  const headers={authorization:`Bearer ${accessToken}`,'content-type':'application/json'};
+  const message={fid:target,notification,data,android:{priority:'HIGH',notification:{sound:'default'}}};
+  let response=await fetch(url,{method:'POST',headers,body:JSON.stringify({message})});
+  let body=await response.text();
+  let targetType='FID';
+  if(!response.ok&&response.status===400){
+    delete message.fid;message.token=target;targetType='TOKEN_LEGADO';
+    response=await fetch(url,{method:'POST',headers,body:JSON.stringify({message})});
+    body=await response.text();
+  }
+  return {response,body,targetType};
+}
+
 async function notifyAssignment({montadorId,orcamentoId,numeroAtendimento,descricaoServico,bairro,cidade,valorRepasse,agendadoPara}){
   if(!montadorId||!orcamentoId)return;
   const sql=getDatabase(),credentials=firebaseCredentials(),notification=(await sql`INSERT INTO notificacoes_push_montador (montador_id,orcamento_id,tipo,titulo,mensagem,dados,status) VALUES (${montadorId},${orcamentoId},'NOVO_SERVICO','Novo serviço disponível','Você recebeu uma nova proposta de serviço.',${JSON.stringify({orcamentoId,numeroAtendimento:String(numeroAtendimento||''),descricaoServico:String(descricaoServico||''),bairro:String(bairro||''),cidade:String(cidade||''),valorRepasse:String(valorRepasse||0),agendadoPara:String(agendadoPara||'')})}::jsonb,${credentials?'PENDENTE':'AGUARDANDO_CONFIGURACAO'}) RETURNING id`)[0];
@@ -31,8 +46,8 @@ async function notifyAssignment({montadorId,orcamentoId,numeroAtendimento,descri
     if(!devices.length){await sql`UPDATE notificacoes_push_montador SET status='SEM_DISPOSITIVO',atualizado_em=NOW() WHERE id=${notification.id}`;return}
     const results=[];
     for(const device of devices){
-      const response=await fetch(`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(credentials.project_id)}/messages:send`,{method:'POST',headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},body:JSON.stringify({message:{token:device.push_token,notification:{title:'Novo serviço disponível',body:'Abra o JLL Montador para analisar a proposta.'},data:{tipo:'NOVO_SERVICO',orcamentoId:String(orcamentoId)}}})});
-      const body=await response.text();results.push({deviceId:device.id,ok:response.ok,status:response.status,resposta:body.slice(0,300)});
+      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:'Novo serviço disponível',body:'Abra o JLL Montador para analisar a proposta.'},data:{tipo:'NOVO_SERVICO',orcamentoId:String(orcamentoId)}});
+      results.push({deviceId:device.id,targetType,ok:response.ok,status:response.status,resposta:body.slice(0,300)});
       if([404,410].includes(response.status))await sql`UPDATE dispositivos_montador SET ativo=FALSE WHERE id=${device.id}`;
     }
     const sent=results.some(item=>item.ok);await sql`UPDATE notificacoes_push_montador SET status=${sent?'ENVIADA':'FALHOU'},resultado=${JSON.stringify(results)}::jsonb,enviado_em=CASE WHEN ${sent} THEN NOW() ELSE enviado_em END,atualizado_em=NOW() WHERE id=${notification.id}`;

@@ -16,6 +16,7 @@ const handlers={
   staff:()=>require('../../_admin-legacy/staff'),
   users:()=>require('../../../api/admin/users'),
   dispositivo:()=>require('../../../api/admin/dispositivo'),
+  'push-status':()=>require('../../../api/admin/push-status'),
   assemblers:()=>require('../../_admin-legacy/assemblers'),
   quote:()=>require('../../../api/admin/quote'),
   quotes:()=>require('../../../api/admin/quotes'),
