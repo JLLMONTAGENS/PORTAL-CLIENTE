@@ -46,7 +46,7 @@ async function notifyAttendance({atendimentoId,tipo,titulo,mensagem,usuarioId=nu
     if(!devices.length){await sql`UPDATE notificacoes_push_atendimento SET status='SEM_DISPOSITIVO',atualizado_em=NOW() WHERE id=${notification.id}`;return}
     const results=[];
     for(const device of devices){
-      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title,body:mensagem},data:{tipo,atendimentoId:String(atendimentoId)}});
+      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:titulo,body:mensagem},data:{tipo,atendimentoId:String(atendimentoId)}});
       results.push({deviceId:device.id,targetType,ok:response.ok,status:response.status,resposta:body.slice(0,300)});if([404,410].includes(response.status))await sql`UPDATE dispositivos_usuario SET ativo=FALSE WHERE id=${device.id}`;
     }
     const sent=results.some(item=>item.ok);await sql`UPDATE notificacoes_push_atendimento SET status=${sent?'ENVIADA':'FALHOU'},resultado=${JSON.stringify(results)}::jsonb,enviado_em=CASE WHEN ${sent} THEN NOW() ELSE enviado_em END,atualizado_em=NOW() WHERE id=${notification.id}`;
