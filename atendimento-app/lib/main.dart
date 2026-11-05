@@ -144,11 +144,26 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
             '${Platform.operatingSystem}-${DateTime.now().microsecondsSinceEpoch}';
         await preferences.setString('device_id', deviceId!);
       }
+      final firstRegistration = messaging.onRegistered.first.timeout(
+        const Duration(seconds: 15),
+      );
       messaging.onRegistered.listen((token) {
         pushToken = token;
         _publishPushToken();
       });
       await messaging.register();
+      String? initialToken;
+      try {
+        initialToken = await firstRegistration;
+      } catch (_) {
+        // Recupera instalações já registradas antes de o listener ser criado.
+        // ignore: deprecated_member_use
+        initialToken = await messaging.getToken();
+      }
+      if (initialToken != null && initialToken.isNotEmpty) {
+        pushToken = initialToken;
+        await _publishPushToken();
+      }
       FirebaseMessaging.onMessage.listen((message) {
         if (!mounted) return;
         final notification = message.notification;

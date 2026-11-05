@@ -528,8 +528,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         const Duration(seconds: 12),
       );
       await messaging.register();
-      final token = await registration;
-      if (token.isNotEmpty) {
+      String? token;
+      try {
+        token = await registration;
+      } catch (_) {
+        // Recupera instalações já registradas antes de o listener ser criado.
+        // ignore: deprecated_member_use
+        token = await messaging.getToken();
+      }
+      if (token != null && token.isNotEmpty) {
         await widget.api.request(
           '/api/montadores/dispositivo',
           method: 'POST',

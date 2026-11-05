@@ -7,7 +7,11 @@ let cachedToken=null;
 function firebaseCredentials(){
   const raw=process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if(!raw)return null;
-  try{return JSON.parse(raw)}catch{return null}
+  try{
+    let credentials=JSON.parse(raw.trim());
+    if(typeof credentials==='string')credentials=JSON.parse(credentials);
+    return credentials&&typeof credentials==='object'?credentials:null;
+  }catch(error){console.error('FIREBASE_SERVICE_ACCOUNT_JSON inválida:',error.message);return null}
 }
 
 async function accessToken(credentials){

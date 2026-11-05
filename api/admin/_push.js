@@ -3,7 +3,14 @@ const {getDatabase}=require('../_db');
 
 const encode=value=>Buffer.from(value).toString('base64url');
 let cachedToken=null;
-function firebaseCredentials(){const raw=process.env.FIREBASE_SERVICE_ACCOUNT_JSON;if(!raw)return null;try{return JSON.parse(raw)}catch{return null}}
+function firebaseCredentials(){
+  const raw=process.env.FIREBASE_SERVICE_ACCOUNT_JSON;if(!raw)return null;
+  try{
+    let credentials=JSON.parse(raw.trim());
+    if(typeof credentials==='string')credentials=JSON.parse(credentials);
+    return credentials&&typeof credentials==='object'?credentials:null;
+  }catch(error){console.error('FIREBASE_SERVICE_ACCOUNT_JSON inválida:',error.message);return null}
+}
 async function accessToken(credentials){
   if(cachedToken&&cachedToken.expiresAt>Date.now()+60_000)return cachedToken.value;
   const now=Math.floor(Date.now()/1000),header=encode(JSON.stringify({alg:'RS256',typ:'JWT'})),payload=encode(JSON.stringify({iss:credentials.client_email,scope:'https://www.googleapis.com/auth/firebase.messaging',aud:'https://oauth2.googleapis.com/token',iat:now,exp:now+3600})),unsigned=`${header}.${payload}`,signature=crypto.sign('RSA-SHA256',Buffer.from(unsigned),String(credentials.private_key||'').replace(/\\n/g,'\n')).toString('base64url');
