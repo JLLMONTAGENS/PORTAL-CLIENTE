@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "27039229231",
+    "project_id": "jllmontagens-homologacao",
+    "storage_bucket": "jllmontagens-homologacao.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:27039229231:android:f9088ceede656980742dda",
+        "android_client_info": {
+          "package_name": "br.com.jllmontagens.atendimento"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvSrltcpNUoBAfl7xHBgZbgJ0Ds0cBG9o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

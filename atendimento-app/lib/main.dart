@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'firebase_options.dart';
+
 const apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
   defaultValue: 'https://portal-cliente-git-homologacao-jean-melo.vercel.app',
@@ -28,7 +30,9 @@ Uri buildAdminUri() {
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (_) {
     // A compilação continua utilizável sem Firebase até a configuração oficial.
   }
@@ -36,6 +40,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {
+    // O portal permanece acessível mesmo se o push estiver indisponível.
+  }
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   runApp(const JllAtendimentoApp());
 }
@@ -45,18 +56,18 @@ class JllAtendimentoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'JLL Atendimento',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF1A2B4C),
-            primary: const Color(0xFF1A2B4C),
-            secondary: const Color(0xFFE67E22),
-          ),
-          useMaterial3: true,
-        ),
-        home: const AtendimentoWebView(),
-      );
+    debugShowCheckedModeBanner: false,
+    title: 'JLL Atendimento',
+    theme: ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF1A2B4C),
+        primary: const Color(0xFF1A2B4C),
+        secondary: const Color(0xFFE67E22),
+      ),
+      useMaterial3: true,
+    ),
+    home: const AtendimentoWebView(),
+  );
 }
 
 class AtendimentoWebView extends StatefulWidget {
@@ -79,23 +90,27 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFFF3F6F9))
-      ..setNavigationDelegate(NavigationDelegate(
-        onProgress: (value) => setState(() => progress = value),
-        onPageFinished: (_) => _publishPushToken(),
-        onWebResourceError: (error) {
-          if (error.isForMainFrame == true) {
-            setState(() => loadError = 'Não foi possível conectar à homologação.');
-          }
-        },
-        onNavigationRequest: (request) async {
-          final uri = Uri.tryParse(request.url);
-          if (uri != null && _isExternalPayment(uri.host)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-            return NavigationDecision.prevent;
-          }
-          return NavigationDecision.navigate;
-        },
-      ))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (value) => setState(() => progress = value),
+          onPageFinished: (_) => _publishPushToken(),
+          onWebResourceError: (error) {
+            if (error.isForMainFrame == true) {
+              setState(
+                () => loadError = 'Não foi possível conectar à homologação.',
+              );
+            }
+          },
+          onNavigationRequest: (request) async {
+            final uri = Uri.tryParse(request.url);
+            if (uri != null && _isExternalPayment(uri.host)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
       ..loadRequest(
         buildAdminUri(),
         headers: vercelProtectionBypass.isEmpty
@@ -106,22 +121,27 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
   }
 
   bool _isExternalPayment(String host) => [
-        'mercadopago.com',
-        'mercadopago.com.br',
-        'pagseguro.com.br',
-        'pagbank.com.br',
-        'userede.com.br',
-      ].any((domain) => host == domain || host.endsWith('.$domain'));
+    'mercadopago.com',
+    'mercadopago.com.br',
+    'pagseguro.com.br',
+    'pagbank.com.br',
+    'userede.com.br',
+  ].any((domain) => host == domain || host.endsWith('.$domain'));
 
   Future<void> _initializePush() async {
     try {
-      await Firebase.initializeApp();
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission(alert: true, badge: true, sound: true);
       final preferences = await SharedPreferences.getInstance();
       deviceId = preferences.getString('device_id');
       if (deviceId == null) {
-        deviceId = '${Platform.operatingSystem}-${DateTime.now().microsecondsSinceEpoch}';
+        deviceId =
+            '${Platform.operatingSystem}-${DateTime.now().microsecondsSinceEpoch}';
         await preferences.setString('device_id', deviceId!);
       }
       messaging.onRegistered.listen((token) {
@@ -132,10 +152,17 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
       FirebaseMessaging.onMessage.listen((message) {
         if (!mounted) return;
         final notification = message.notification;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(notification?.body ?? 'Há uma atualização no atendimento.'),
-          action: SnackBarAction(label: 'Abrir', onPressed: () => controller.reload()),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              notification?.body ?? 'Há uma atualização no atendimento.',
+            ),
+            action: SnackBarAction(
+              label: 'Abrir',
+              onPressed: () => controller.reload(),
+            ),
+          ),
+        );
       });
       FirebaseMessaging.onMessageOpenedApp.listen((_) => controller.reload());
     } catch (_) {
@@ -169,31 +196,38 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
 
   @override
   Widget build(BuildContext context) => PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) async {
-          if (!didPop && await _handleBack()) {
-            if (!context.mounted) return;
-            Navigator.of(context).pop();
-          }
-        },
-        child: Scaffold(
-          backgroundColor: const Color(0xFFF3F6F9),
-          body: SafeArea(
-            child: Stack(children: [
-              WebViewWidget(controller: controller),
-              if (progress < 100)
-                LinearProgressIndicator(
-                  value: progress / 100,
-                  color: const Color(0xFFE67E22),
-                ),
-              if (loadError != null)
-                Center(
-                  child: Card(
-                    margin: const EdgeInsets.all(24),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.cloud_off, size: 42, color: Color(0xFFE67E22)),
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) async {
+      if (!didPop && await _handleBack()) {
+        if (!context.mounted) return;
+        Navigator.of(context).pop();
+      }
+    },
+    child: Scaffold(
+      backgroundColor: const Color(0xFFF3F6F9),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            WebViewWidget(controller: controller),
+            if (progress < 100)
+              LinearProgressIndicator(
+                value: progress / 100,
+                color: const Color(0xFFE67E22),
+              ),
+            if (loadError != null)
+              Center(
+                child: Card(
+                  margin: const EdgeInsets.all(24),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.cloud_off,
+                          size: 42,
+                          color: Color(0xFFE67E22),
+                        ),
                         const SizedBox(height: 12),
                         Text(loadError!, textAlign: TextAlign.center),
                         const SizedBox(height: 16),
@@ -204,12 +238,14 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
                           },
                           child: const Text('Tentar novamente'),
                         ),
-                      ]),
+                      ],
                     ),
                   ),
                 ),
-            ]),
-          ),
+              ),
+          ],
         ),
-      );
+      ),
+    ),
+  );
 }
