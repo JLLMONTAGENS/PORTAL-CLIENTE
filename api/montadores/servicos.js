@@ -1,5 +1,6 @@
 const {getDatabase}=require('../_db');
 const c=require('./_core');
+const {notifyAttendance}=require('../admin/_push');
 
 const cleanId=value=>String(value||'').trim();
 const publicService=row=>{
@@ -26,7 +27,7 @@ module.exports=async function(req,res){
     const id=cleanId(req.body?.id),action=String(req.body?.acao||'').toUpperCase(),operationId=cleanId(req.body?.operacaoId||req.headers['x-idempotency-key']);
     if(!id||!['ACEITAR','RECUSAR','INICIAR_DESLOCAMENTO','CONFIRMAR_CHEGADA','FINALIZAR'].includes(action))return res.status(400).json({error:'Ação de serviço inválida.'});
     if(operationId){const previous=(await sql`SELECT resposta FROM operacoes_montador WHERE montador_id=${assembler.id} AND chave_idempotencia=${operationId} LIMIT 1`)[0];if(previous)return res.status(200).json({...previous.resposta,repetida:true})}
-    const current=(await sql`SELECT o.*,a.nome_cliente,a.telefone AS telefone_cliente,(SELECT COUNT(*) FROM fotos_servico_montador f WHERE f.orcamento_id=o.id)::int AS fotos FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id WHERE o.id=${id} AND o.montador_id=${assembler.id} LIMIT 1`)[0];
+    const current=(await sql`SELECT o.*,a.nome_cliente,a.telefone AS telefone_cliente,a.atendente_id,a.numero_atendimento,(SELECT COUNT(*) FROM fotos_servico_montador f WHERE f.orcamento_id=o.id)::int AS fotos FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id WHERE o.id=${id} AND o.montador_id=${assembler.id} LIMIT 1`)[0];
     if(!current)return res.status(404).json({error:'Serviço não encontrado ou não atribuído a você.'});
     let row,eventType,message,changed=false;
     if(action==='ACEITAR'){
@@ -53,6 +54,7 @@ module.exports=async function(req,res){
       await sql`UPDATE atendimentos SET status='SERVICO_FINALIZADO',encerrado_em=COALESCE(encerrado_em,NOW()),atualizado_em=NOW() WHERE id=${current.atendimento_id}`;eventType='ATENDIMENTO_FINALIZADO';message='Serviço finalizado e enviado para repasse.';changed=true;
     }
     if(changed)await sql`INSERT INTO eventos_atendimento (atendimento_id,tipo_evento,detalhes) VALUES (${current.atendimento_id},${eventType},${JSON.stringify({orcamentoId:id,montadorId:assembler.id,operacaoId:operationId||null})}::jsonb)`;
+    if(changed&&action==='RECUSAR')try{const nome=String(assembler.nome_completo||assembler.nome||'O montador').trim();await notifyAttendance({atendimentoId:current.atendimento_id,tipo:'MONTADOR_RECUSOU_SERVICO',titulo:'Serviço recusado pelo montador',mensagem:`${nome} recusou o atendimento #${current.numero_atendimento}. Faça uma nova atribuição.`,usuarioId:current.atendente_id||null})}catch(pushError){console.error('Push de recusa do montador não enviado',pushError)}
     const response={ok:true,mensagem:message,servico:publicService({...current,...row})};await remember(sql,assembler.id,operationId,action,id,response);
     return res.status(200).json(response);
   }catch(error){console.error(error);return res.status(500).json({error:'Não foi possível processar o serviço.'})}

@@ -136,3 +136,31 @@ html.app-mode #admin-menu-toggle{display:none!important}
   html.app-mode .attendance-card.assembler-rejected .rejection-note{display:block!important;margin-top:7px;padding:7px;border-radius:7px;background:#fff0ee;font-size:.68rem;line-height:1.4;white-space:normal}
   html.app-mode .attendance-card.assembler-rejected .card-actions{align-items:flex-start}
 }
+
+/* Conversa compacta no APK, inspirada em mensageiros móveis. */
+@media(max-width:800px){
+  html.app-mode body.mobile-conversation-open .conversation-pane{position:fixed;z-index:15;top:58px;right:0;bottom:calc(72px + env(safe-area-inset-bottom));left:0;display:flex;width:auto;height:auto;min-height:0;max-height:none;border:0;border-radius:0;flex-direction:column;overflow:hidden;background:#f5f6f8}
+  html.app-mode body.mobile-conversation-open .conversation-head{display:grid;max-height:none;min-height:66px;padding:7px 8px;border-bottom:1px solid #dce4eb;grid-template-columns:40px minmax(0,1fr) 40px;align-items:center;gap:7px;overflow:visible;background:#fff;box-shadow:0 2px 8px rgba(26,43,76,.08)}
+  html.app-mode .mobile-back-conversations{display:grid;width:38px;height:38px;margin:0;padding:0;place-items:center;border:0;border-radius:50%;font-size:0}
+  html.app-mode .mobile-back-conversations::before{content:'‹';font-size:1.85rem;line-height:1}
+  html.app-mode .conversation-head>div{min-width:0}
+  html.app-mode .conversation-head h2{margin:0;overflow:hidden;font-size:.84rem;text-overflow:ellipsis;white-space:nowrap}
+  html.app-mode .conversation-head p{margin:2px 0 0;overflow:hidden;font-size:.62rem;text-overflow:ellipsis;white-space:nowrap}
+  html.app-mode .conversation-status{display:none}
+  html.app-mode .conversation-tools{position:static;width:40px;margin:0}
+  html.app-mode .conversation-tools>summary{display:grid;width:38px;height:38px;padding:0;place-items:center;border:0;border-radius:50%;background:#f1f4f7;color:#1a2b4c;font-size:1.6rem;line-height:1;list-style:none}
+  html.app-mode .conversation-tools>summary::-webkit-details-marker{display:none}
+  html.app-mode .conversation-tools[open]>summary{margin:0;background:#1a2b4c;color:#fff}
+  html.app-mode .conversation-tools[open] .conversation-actions{position:fixed;z-index:120;top:108px;right:8px;display:grid;width:min(310px,calc(100vw - 16px));max-height:calc(100dvh - 200px);padding:10px;border:1px solid #dce4eb;border-radius:14px;grid-template-columns:1fr;gap:7px;overflow-y:auto;background:#fff;box-shadow:0 15px 45px rgba(10,25,50,.25)}
+  html.app-mode .conversation-tools[open] .conversation-actions button,html.app-mode .conversation-tools[open] .conversation-actions select{display:block;width:100%;min-height:42px;grid-column:auto;font-size:.74rem}
+  html.app-mode body.mobile-conversation-open .conversation-messages{height:auto;min-height:0;padding:9px;flex:1 1 auto;overflow-y:auto}
+  html.app-mode .admin-message{max-width:92%;padding:8px 10px}
+  html.app-mode .admin-message.quote-message-card{width:94%;max-width:94%}
+  html.app-mode .admin-quote-summary dl{grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px 10px}
+  html.app-mode .admin-quote-row{padding:7px}
+  html.app-mode .admin-quote-row-wide{grid-column:1/-1}
+  html.app-mode body.mobile-conversation-open .conversation-form{display:grid;width:100%;padding:7px;grid-template-columns:40px minmax(0,1fr) auto;gap:6px;align-items:center;background:#fff}
+  html.app-mode body.mobile-conversation-open .conversation-form input{min-width:0;padding:9px 10px}
+  html.app-mode body.mobile-conversation-open .conversation-form>button:last-child{min-width:58px;padding:10px 9px;font-size:.7rem}
+  html.app-mode body.mobile-conversation-open .admin-jump-latest{right:12px;bottom:58px}
+}
