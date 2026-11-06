@@ -1,11 +1,13 @@
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {ensureChatSchema}=require('./_chat-schema');
 
 module.exports=async function handler(req,res){
   const user=await authenticatedUser(req);if(!user)return res.status(401).json({error:'Sessão expirada.'});
   if(user.perfil!=='ADMINISTRADOR')return res.status(403).json({error:'A supervisão é exclusiva para administradores.'});
   const sql=getDatabase();
   try{
+    await ensureChatSchema(sql);
     if(req.method==='GET'&&req.query?.atendimentoId){
       const id=String(req.query.atendimentoId),rows=await sql`SELECT a.*,u.nome_exibicao AS atendente_nome FROM atendimentos a LEFT JOIN usuarios_atendimento u ON u.id=a.atendente_id WHERE a.id=${id} LIMIT 1`;
       if(!rows[0])return res.status(404).json({error:'Atendimento não encontrado.'});

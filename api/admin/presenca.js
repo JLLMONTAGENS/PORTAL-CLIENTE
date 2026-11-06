@@ -1,10 +1,12 @@
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {ensureChatSchema}=require('./_chat-schema');
 
 module.exports=async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({error:'Método não permitido'});
   const user=await authenticatedUser(req);if(!user)return res.status(401).json({error:'Sessão expirada.'});
   try{
+    await ensureChatSchema(sql);
     const origem=String(req.body?.origem||'WEB').toUpperCase();
     const platform=['WEB','ANDROID','IOS'].includes(origem)?origem:'WEB';
     const sql=getDatabase();

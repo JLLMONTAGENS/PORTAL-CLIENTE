@@ -1,6 +1,7 @@
 const {put}=require('@vercel/blob');
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {ensureChatSchema}=require('./_chat-schema');
 
 const allowedTypes=new Set(['image/jpeg','image/png','image/webp']);
 const validImage=(buffer,mime)=>mime==='image/jpeg'?(buffer[0]===0xff&&buffer[1]===0xd8&&buffer[2]===0xff):mime==='image/png'?buffer.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])):mime==='image/webp'?(buffer.subarray(0,4).toString()==='RIFF'&&buffer.subarray(8,12).toString()==='WEBP'):false;
@@ -9,6 +10,7 @@ module.exports=async function handler(req,res){
   const user=await authenticatedUser(req);if(!user)return res.status(401).json({error:'Sessão expirada.'});
   const sql=getDatabase();
   try{
+    await ensureChatSchema(sql);
     if(req.method==='GET'){
       const contacts=await sql`SELECT u.id,u.nome_exibicao,u.login,u.perfil,(p.ultima_atividade_em>NOW()-INTERVAL '90 seconds') AS online,p.ultima_atividade_em,last_message.texto AS ultima_mensagem,last_message.criado_em AS ultima_mensagem_em,COALESCE(unread.quantidade,0)::int AS nao_lidas FROM usuarios_atendimento u LEFT JOIN usuarios_presenca p ON p.usuario_id=u.id LEFT JOIN LATERAL (SELECT mi.texto,mi.criado_em FROM mensagens_internas mi WHERE (mi.remetente_id=${user.id} AND mi.destinatario_id=u.id) OR (mi.remetente_id=u.id AND mi.destinatario_id=${user.id}) ORDER BY mi.criado_em DESC LIMIT 1) last_message ON TRUE LEFT JOIN LATERAL (SELECT COUNT(*)::int AS quantidade FROM mensagens_internas mi WHERE mi.remetente_id=u.id AND mi.destinatario_id=${user.id} AND mi.lida_em IS NULL) unread ON TRUE WHERE u.ativo=TRUE AND u.id<>${user.id} ORDER BY (last_message.criado_em IS NOT NULL) DESC,last_message.criado_em DESC NULLS LAST,online DESC,u.nome_exibicao`;
       const contactId=String(req.query?.contatoId||'');if(!contactId)return res.status(200).json({contatos:contacts});
@@ -31,5 +33,5 @@ module.exports=async function handler(req,res){
       return res.status(201).json({mensagem:message,contato:contact});
     }
     return res.status(405).json({error:'Método não permitido'});
-  }catch(error){console.error('Internal chat failed',error);return res.status(500).json({error:'Não foi possível concluir o chat interno.'})}
+  }catch(error){console.error('Internal chat failed',error);const setupFailed=['42501','0A000'].includes(String(error.code||''));return res.status(500).json({error:setupFailed?'O banco de homologação não permitiu inicializar o chat. Execute a migração de presença e chat interno no Neon.':'Não foi possível concluir o chat interno.'})}
 };
