@@ -1,4 +1,4 @@
-const {get}=require('@vercel/blob');
+const {get}=global.__JLL_VERCEL_BLOB||require('@vercel/blob');
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
 

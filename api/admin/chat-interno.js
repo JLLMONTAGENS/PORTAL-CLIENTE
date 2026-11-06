@@ -1,4 +1,4 @@
-const {put}=require('@vercel/blob');
+const {put}=global.__JLL_VERCEL_BLOB||require('@vercel/blob');
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
 const {ensureChatSchema}=require('./_chat-schema');
