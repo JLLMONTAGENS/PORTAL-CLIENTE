@@ -202,21 +202,23 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
   }
 
   Future<bool> _handleBack() async {
-    if (await controller.canGoBack()) {
-      await controller.goBack();
-      return false;
+    try {
+      final result = await controller.runJavaScriptReturningResult(
+        "JSON.stringify(Boolean(window.jllHandleAndroidBack && window.jllHandleAndroidBack()))",
+      );
+      final handled = result.toString().replaceAll('"', '') == 'true';
+      if (handled) return false;
+    } catch (_) {
+      // Mantém a tela atual caso a página ainda esteja carregando.
     }
-    return true;
+    return false;
   }
 
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: false,
     onPopInvokedWithResult: (didPop, _) async {
-      if (!didPop && await _handleBack()) {
-        if (!context.mounted) return;
-        Navigator.of(context).pop();
-      }
+      if (!didPop) await _handleBack();
     },
     child: Scaffold(
       backgroundColor: const Color(0xFFF3F6F9),
