@@ -164,3 +164,30 @@ html.app-mode #admin-menu-toggle{display:none!important}
   html.app-mode body.mobile-conversation-open .conversation-form>button:last-child{min-width:58px;padding:10px 9px;font-size:.7rem}
   html.app-mode body.mobile-conversation-open .admin-jump-latest{right:12px;bottom:58px}
 }
+
+/* Chat interno do APK: somente cabeçalho, mensagens e compositor ficam visíveis. */
+@media(max-width:800px){
+  html.app-mode #internal-chat-view{position:fixed;z-index:20;top:58px;right:0;bottom:calc(72px + env(safe-area-inset-bottom));left:0;width:auto;height:auto;min-height:0;padding:0;overflow:hidden;background:#eef3f7}
+  html.app-mode #internal-chat-view .ops-heading{display:none}
+  html.app-mode #internal-chat-view .internal-chat-layout{width:100%;height:100%;min-height:0;border:0;border-radius:0;grid-template-columns:1fr;background:#eef3f7}
+  html.app-mode #internal-chat-view .internal-contacts{height:100%;padding:8px 10px;overflow-y:auto;background:#f4f7fa}
+  html.app-mode #internal-chat-view .internal-thread{height:100%;min-height:0;grid-template-rows:58px minmax(0,1fr) auto;overflow:hidden}
+  html.app-mode #internal-chat-view .internal-thread>header{min-height:58px;padding:8px 11px;gap:10px;box-shadow:0 2px 8px rgba(26,43,76,.08)}
+  html.app-mode #internal-back{display:grid;width:38px;height:38px;min-width:38px;margin:0;padding:0;place-items:center;border:0;border-radius:50%;font-size:0}
+  html.app-mode #internal-back::before{content:'‹';font-size:1.85rem;line-height:1}
+  html.app-mode #internal-thread-title{overflow:hidden;font-size:.88rem;text-overflow:ellipsis;white-space:nowrap}
+  html.app-mode #internal-messages{min-height:0;padding:10px;gap:7px;overflow-y:auto;overscroll-behavior:contain}
+  html.app-mode .internal-message{max-width:88%;padding:8px 10px;border-radius:12px 12px 12px 3px}
+  html.app-mode .internal-message.mine{border-radius:12px 12px 3px 12px}
+  html.app-mode .internal-message>span{font-size:.82rem;line-height:1.4}
+  html.app-mode .internal-message .message-meta{margin-top:5px;justify-content:flex-end;gap:12px}
+  html.app-mode .internal-message .message-meta small{margin:0;color:#728091;font-size:.61rem}
+  html.app-mode .internal-message .forward-internal{padding:2px 0;color:#526579;font-size:.61rem}
+  html.app-mode .internal-image img{width:min(68vw,260px);max-width:100%;max-height:42vh}
+  html.app-mode #internal-composer{display:grid;width:100%;padding:7px;grid-template-columns:40px minmax(0,1fr) auto;gap:6px;align-items:center;background:#fff}
+  html.app-mode #internal-composer[hidden]{display:none}
+  html.app-mode #internal-composer input{width:100%;min-width:0;padding:9px 10px}
+  html.app-mode #internal-composer>button{min-height:40px;margin:0}
+  html.app-mode #internal-attach{display:grid;width:40px;min-width:40px;height:40px;padding:0;place-items:center;border-radius:50%;font-size:1.25rem}
+  html.app-mode #internal-composer>button[type="submit"]{min-width:58px;padding:9px;font-size:.7rem}
+}

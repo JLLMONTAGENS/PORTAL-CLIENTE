@@ -98,6 +98,10 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFFF3F6F9))
+      ..addJavaScriptChannel(
+        'JllNativeAttachment',
+        onMessageReceived: _handleNativeAttachment,
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (value) => setState(() => progress = value),
@@ -133,7 +137,25 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
   }
 
   Future<List<String>> _selectAndroidFiles(FileSelectorParams params) async {
-    if (!mounted) return const [];
+    final source = await _chooseAttachmentSource();
+    if (source == null) return const [];
+    if (source == _AttachmentSource.camera) {
+      final file = await _pickImage(source);
+      return file == null ? const [] : [Uri.file(file.path).toString()];
+    }
+    if (params.mode == FileSelectorMode.openMultiple) {
+      final files = await _imagePicker.pickMultiImage(
+        imageQuality: 78,
+        maxWidth: 1800,
+      );
+      return files.map((file) => Uri.file(file.path).toString()).toList();
+    }
+    final file = await _pickImage(source);
+    return file == null ? const [] : [Uri.file(file.path).toString()];
+  }
+
+  Future<_AttachmentSource?> _chooseAttachmentSource() async {
+    if (!mounted) return null;
     final source = await showModalBottomSheet<_AttachmentSource>(
       context: context,
       showDragHandle: true,
@@ -156,28 +178,53 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
         ),
       ),
     );
-    if (source == null) return const [];
-    if (source == _AttachmentSource.camera) {
-      final file = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 82,
-        maxWidth: 2000,
+    return source;
+  }
+
+  Future<XFile?> _pickImage(_AttachmentSource source) =>
+      _imagePicker.pickImage(
+        source: source == _AttachmentSource.camera
+            ? ImageSource.camera
+            : ImageSource.gallery,
+        imageQuality: 78,
+        maxWidth: 1800,
       );
-      return file == null ? const [] : [Uri.file(file.path).toString()];
-    }
-    if (params.mode == FileSelectorMode.openMultiple) {
-      final files = await _imagePicker.pickMultiImage(
-        imageQuality: 82,
-        maxWidth: 2000,
+
+  Future<void> _handleNativeAttachment(JavaScriptMessage message) async {
+    try {
+      final request = jsonDecode(message.message) as Map<String, dynamic>;
+      final inputId = (request['inputId'] ?? '').toString();
+      if (inputId.isEmpty) return;
+      final source = await _chooseAttachmentSource();
+      if (source == null) return;
+      final file = await _pickImage(source);
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final lowerName = file.name.toLowerCase();
+      final mimeType = file.mimeType ??
+          (lowerName.endsWith('.png')
+              ? 'image/png'
+              : lowerName.endsWith('.webp')
+              ? 'image/webp'
+              : 'image/jpeg');
+      final payload = jsonEncode({
+        'inputId': inputId,
+        'fileName': file.name,
+        'mimeType': mimeType,
+        'data': base64Encode(bytes),
+      });
+      await controller.runJavaScript(
+        'window.jllReceiveNativeAttachment && '
+        'window.jllReceiveNativeAttachment($payload);',
       );
-      return files.map((file) => Uri.file(file.path).toString()).toList();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível abrir ou anexar esta imagem.'),
+        ),
+      );
     }
-    final file = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 82,
-      maxWidth: 2000,
-    );
-    return file == null ? const [] : [Uri.file(file.path).toString()];
   }
 
   bool _isExternalPayment(String host) => [
