@@ -179,4 +179,6 @@ CREATE TABLE IF NOT EXISTS notificacoes_push_atendimento (
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Consulte database/migracao-chat-interno-presenca.sql para presença, supervisão e chat interno.
 CREATE INDEX IF NOT EXISTS notificacoes_push_atendimento_idx ON notificacoes_push_atendimento(atendimento_id,status,criado_em DESC);

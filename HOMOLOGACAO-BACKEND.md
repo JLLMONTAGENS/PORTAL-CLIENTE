@@ -243,9 +243,19 @@ Antes de publicar esta evolução, execute no Neon exclusivo de homologação:
 database/migracao-recuperacao-usuarios-push-atendimento.sql
 ```
 
+## Presença, supervisão e chat interno
+
+Antes do deploy desta evolução, execute no SQL Editor do Neon exclusivo de homologação:
+
+```text
+database/migracao-chat-interno-presenca.sql
+```
+
+A migração é reexecutável. Ela cria presença on-line/off-line, mensagens diretas da equipe, anexos privados, rastreabilidade de mensagens encaminhadas de atendimentos e o registro das notificações internas.
+
 O login do usuário administrativo continua sendo um identificador livre, como `jean.melo`. O e-mail passa a ser um campo separado, obrigatório e exclusivo, utilizado para a recuperação de senha. Usuários legados devem ter o e-mail corrigido no menu **Usuários** antes de usar **Esqueci minha senha**. O link enviado pelo SMTP é de uso único e expira em 30 minutos.
 
-O novo aplicativo Flutter da equipe fica em `atendimento-app/`, substitui a futura evolução do APK Android legado e mantém o mesmo login, sessão e permissões do portal. Ele compila para Android e iOS, abre a central no modo compacto e registra o token FCM do usuário autenticado. Novos atendimentos e novas mensagens do cliente podem gerar push; quando já existe responsável, a mensagem é destinada ao responsável e aos administradores.
+O novo aplicativo Flutter da equipe fica em `atendimento-app/`, substitui a futura evolução do APK Android legado e mantém o mesmo login, sessão e permissões do portal. Ele compila para Android e iOS, abre a central no modo compacto e registra o token FCM do usuário autenticado. Novos atendimentos notificam toda a equipe; depois que alguém assume, mensagens do cliente notificam somente o responsável atual.
 
 O login administrativo também oferece **Manter conectado**. Marcado, o token assinado não expira automaticamente e a sessão permanece no aparelho até o usuário usar **Sair**; desmarcado, continua válida por 12 horas. Desativar o usuário no admin invalida o acesso mesmo quando a sessão persistente estiver salva.
 

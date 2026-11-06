@@ -25,7 +25,7 @@ async function accessToken(credentials){
 async function sendToFirebase({credentials,accessToken,target,notification,data}){
   const url=`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(credentials.project_id)}/messages:send`;
   const headers={authorization:`Bearer ${accessToken}`,'content-type':'application/json'};
-  const message={fid:target,notification,data,android:{priority:'HIGH',notification:{sound:'default'}}};
+  const message={fid:target,notification,data,android:{priority:'HIGH',notification:{sound:'default',icon:'ic_stat_jll_montador',color:'#E67E22'}}};
   let response=await fetch(url,{method:'POST',headers,body:JSON.stringify({message})});
   let body=await response.text();
   let targetType='FID';
@@ -46,7 +46,8 @@ async function notifyAssignment({montadorId,orcamentoId,numeroAtendimento,descri
     if(!devices.length){await sql`UPDATE notificacoes_push_montador SET status='SEM_DISPOSITIVO',atualizado_em=NOW() WHERE id=${notification.id}`;return}
     const results=[];
     for(const device of devices){
-      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:'Novo serviço disponível',body:'Abra o JLL Montador para analisar a proposta.'},data:{tipo:'NOVO_SERVICO',orcamentoId:String(orcamentoId)}});
+      const preview=[String(descricaoServico||'Novo serviço').replace(/\s+/g,' ').slice(0,80),[bairro,cidade].filter(Boolean).join(', '),Number(valorRepasse||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})].filter(Boolean).join(' · ');
+      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:'Novo serviço disponível',body:preview},data:{tipo:'NOVO_SERVICO',orcamentoId:String(orcamentoId)}});
       results.push({deviceId:device.id,targetType,ok:response.ok,status:response.status,resposta:body.slice(0,300)});
       if([404,410].includes(response.status))await sql`UPDATE dispositivos_montador SET ativo=FALSE WHERE id=${device.id}`;
     }
