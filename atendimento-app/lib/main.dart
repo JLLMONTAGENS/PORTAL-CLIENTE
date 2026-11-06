@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -5,9 +6,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import 'firebase_options.dart';
 
@@ -78,6 +81,8 @@ class AtendimentoWebView extends StatefulWidget {
   State<AtendimentoWebView> createState() => _AtendimentoWebViewState();
 }
 
+enum _AttachmentSource { camera, gallery }
+
 class _AtendimentoWebViewState extends State<AtendimentoWebView> {
   late final WebViewController controller;
   String? pushToken;
@@ -85,6 +90,7 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
   int progress = 0;
   String? loadError;
   bool _handlingBack = false;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -119,7 +125,59 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
             ? const {}
             : {'x-vercel-protection-bypass': vercelProtectionBypass},
       );
+    final platformController = controller.platform;
+    if (platformController is AndroidWebViewController) {
+      unawaited(platformController.setOnShowFileSelector(_selectAndroidFiles));
+    }
     _initializePush();
+  }
+
+  Future<List<String>> _selectAndroidFiles(FileSelectorParams params) async {
+    if (!mounted) return const [];
+    final source = await showModalBottomSheet<_AttachmentSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Tirar foto'),
+              subtitle: const Text('Usar a câmera do aparelho'),
+              onTap: () => Navigator.pop(context, _AttachmentSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Escolher da galeria'),
+              subtitle: const Text('Selecionar uma imagem já salva'),
+              onTap: () => Navigator.pop(context, _AttachmentSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return const [];
+    if (source == _AttachmentSource.camera) {
+      final file = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 82,
+        maxWidth: 2000,
+      );
+      return file == null ? const [] : [Uri.file(file.path).toString()];
+    }
+    if (params.mode == FileSelectorMode.openMultiple) {
+      final files = await _imagePicker.pickMultiImage(
+        imageQuality: 82,
+        maxWidth: 2000,
+      );
+      return files.map((file) => Uri.file(file.path).toString()).toList();
+    }
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 82,
+      maxWidth: 2000,
+    );
+    return file == null ? const [] : [Uri.file(file.path).toString()];
   }
 
   bool _isExternalPayment(String host) => [

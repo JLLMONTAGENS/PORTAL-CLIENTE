@@ -118,3 +118,21 @@ html.app-mode .admin-shell{padding-bottom:74px}html.app-mode .app-bottom-nav{pos
 /* Reserva a navegação inferior sem cobrir formulários e ações do APK. */
 html.app-mode .quote-panel,html.app-mode .payment-panel{inset:0 0 calc(72px + env(safe-area-inset-bottom)) 0;padding-bottom:24px;scroll-padding-bottom:24px;z-index:80}
 html.app-mode .quote-panel form>button[type="submit"]{position:sticky;bottom:0;z-index:2;width:100%;box-shadow:0 -8px 18px rgba(255,255,255,.96)}
+
+/* O APK mantém cabeçalho, ações e compositor visíveis; somente o conteúdo central rola. */
+html.app-mode #admin-menu-toggle{display:none!important}
+@media(max-width:800px){
+  html.app-mode body.mobile-conversation-open{height:100dvh;overflow:hidden}
+  html.app-mode body.mobile-conversation-open .admin-shell{height:100dvh;overflow:hidden}
+  html.app-mode body.mobile-conversation-open .institutional{height:58px;min-height:58px;padding:7px 10px;flex:0 0 58px}
+  html.app-mode body.mobile-conversation-open #attendances-view{height:calc(100dvh - 130px - env(safe-area-inset-bottom));overflow:hidden}
+  html.app-mode body.mobile-conversation-open .admin-layout{height:100%}
+  html.app-mode body.mobile-conversation-open .conversation-pane{display:flex;height:100%;min-height:0;max-height:100%;flex-direction:column;overflow:hidden}
+  html.app-mode body.mobile-conversation-open .conversation-head{max-height:38dvh;overflow-y:auto;flex:0 0 auto}
+  html.app-mode body.mobile-conversation-open .conversation-messages{height:auto;min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain}
+  html.app-mode body.mobile-conversation-open .conversation-form{position:relative;bottom:auto;flex:0 0 auto;padding-bottom:8px}
+  html.app-mode body.mobile-conversation-open .admin-jump-latest{bottom:64px}
+  html.app-mode .attendance-card.assembler-rejected{grid-template-columns:1fr}
+  html.app-mode .attendance-card.assembler-rejected .rejection-note{display:block!important;margin-top:7px;padding:7px;border-radius:7px;background:#fff0ee;font-size:.68rem;line-height:1.4;white-space:normal}
+  html.app-mode .attendance-card.assembler-rejected .card-actions{align-items:flex-start}
+}
