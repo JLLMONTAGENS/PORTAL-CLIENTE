@@ -13,7 +13,8 @@ module.exports = async function handler(req, res) {
     await sql`UPDATE atendimentos SET atualizado_em = NOW() WHERE id = ${conversationId}`;
     try {
       const { notifyAttendance } = require('../admin/_push');
-      await notifyAttendance({ atendimentoId: conversationId, tipo: 'NOVA_MENSAGEM_CLIENTE', titulo: 'Nova mensagem do cliente', mensagem: `${open[0].nome_cliente} enviou uma mensagem.`, usuarioId: open[0].atendente_id });
+      const preview = body.replace(/\s+/g, ' ').slice(0, 120);
+      await notifyAttendance({ atendimentoId: conversationId, tipo: 'NOVA_MENSAGEM_CLIENTE', titulo: 'Nova mensagem do cliente', mensagem: `${open[0].nome_cliente} enviou: ${preview}`, usuarioId: open[0].atendente_id });
     } catch (pushError) {
       console.error('Push de nova mensagem não enviado', pushError);
     }

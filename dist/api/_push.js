@@ -22,7 +22,7 @@ async function accessToken(credentials){
 async function sendToFirebase({credentials,accessToken,target,notification,data}){
   const url=`https://fcm.googleapis.com/v1/projects/${encodeURIComponent(credentials.project_id)}/messages:send`;
   const headers={authorization:`Bearer ${accessToken}`,'content-type':'application/json'};
-  const message={fid:target,notification,data,android:{priority:'HIGH',notification:{sound:'default'}}};
+  const message={fid:target,notification,data,android:{priority:'HIGH',notification:{sound:'default',icon:'ic_stat_jll_atendimento',color:'#E67E22'}}};
   let response=await fetch(url,{method:'POST',headers,body:JSON.stringify({message})});
   let body=await response.text();
   let targetType='FID';
@@ -41,7 +41,7 @@ async function notifyAttendance({atendimentoId,tipo,titulo,mensagem,usuarioId=nu
   try{
     const token=await accessToken(credentials);
     const devices=usuarioId
-      ?await sql`SELECT d.id,d.push_token FROM dispositivos_usuario d JOIN usuarios_atendimento u ON u.id=d.usuario_id WHERE d.ativo=TRUE AND u.ativo=TRUE AND (u.id=${usuarioId} OR u.perfil='ADMINISTRADOR')`
+      ?await sql`SELECT d.id,d.push_token FROM dispositivos_usuario d JOIN usuarios_atendimento u ON u.id=d.usuario_id WHERE d.ativo=TRUE AND u.ativo=TRUE AND u.id=${usuarioId}`
       :await sql`SELECT d.id,d.push_token FROM dispositivos_usuario d JOIN usuarios_atendimento u ON u.id=d.usuario_id WHERE d.ativo=TRUE AND u.ativo=TRUE`;
     if(!devices.length){await sql`UPDATE notificacoes_push_atendimento SET status='SEM_DISPOSITIVO',atualizado_em=NOW() WHERE id=${notification.id}`;return}
     const results=[];

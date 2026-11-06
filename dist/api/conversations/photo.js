@@ -14,13 +14,19 @@ module.exports = async function handler(req, res) {
   if (!fileBuffer.length || fileBuffer.length > 4 * 1024 * 1024) return res.status(413).json({ error: 'A imagem deve ter no máximo 4 MB.' });
   try {
     const sql = getDatabase();
-    const open = await sql`SELECT id FROM atendimentos WHERE id = ${conversationId} AND status NOT IN ('SERVICO_FINALIZADO','CANCELADO') LIMIT 1`;
+    const open = await sql`SELECT id,nome_cliente,atendente_id FROM atendimentos WHERE id = ${conversationId} AND status NOT IN ('SERVICO_FINALIZADO','CANCELADO') LIMIT 1`;
     if (!open[0]) return res.status(404).json({ error: 'Atendimento não encontrado ou encerrado.' });
     const blob = await put(`atendimentos/${conversationId}/${Date.now()}-${fileName}`, fileBuffer, { access: 'private', contentType: mimeType, addRandomSuffix: true });
     const messages = await sql`INSERT INTO mensagens (atendimento_id, tipo_remetente, texto) VALUES (${conversationId}, 'CLIENTE', 'Imagem enviada') RETURNING id, tipo_remetente AS sender_type, texto AS body, criado_em AS created_at`;
     const message = messages[0];
     const attachments = await sql`INSERT INTO anexos_mensagem (mensagem_id, url_armazenamento, nome_arquivo, tipo_mime, tamanho_bytes) VALUES (${message.id}, ${blob.url}, ${fileName}, ${mimeType}, ${fileBuffer.length}) RETURNING id`;
     await sql`UPDATE atendimentos SET atualizado_em = NOW() WHERE id = ${conversationId}`;
+    try {
+      const { notifyAttendance } = require('../_push');
+      await notifyAttendance({ atendimentoId: conversationId, tipo: 'NOVA_IMAGEM_CLIENTE', titulo: 'Nova imagem do cliente', mensagem: `${open[0].nome_cliente} enviou uma imagem.`, usuarioId: open[0].atendente_id });
+    } catch (pushError) {
+      console.error('Push de nova imagem não enviado', pushError);
+    }
     return res.status(201).json({ message: { ...message, attachment_id: attachments[0].id, attachment_mime: mimeType }, attachment: { fileName, mimeType, size: fileBuffer.length } });
   } catch (error) {
     console.error('Photo upload failed', error);
