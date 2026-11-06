@@ -3,7 +3,7 @@
   const contactsBox=$('#internal-contacts'),messagesBox=$('#internal-messages'),composer=$('#internal-composer'),threadTitle=$('#internal-thread-title');
   const presenceOrigin=APP_MODE?(/iPhone|iPad|iPod/i.test(navigator.userAgent)?'IOS':'ANDROID'):'WEB';
   const imageUrl=message=>`/api/admin/chat-interno-anexo?mensagemId=${encodeURIComponent(message.id)}`;
-  const scrollInternal=()=>requestAnimationFrame(()=>{messagesBox.scrollTo({top:messagesBox.scrollHeight,behavior:'auto'});requestAnimationFrame(()=>messagesBox.scrollTo({top:messagesBox.scrollHeight,behavior:'auto'}))});
+  const scrollInternal=()=>{const followLatest=()=>{messagesBox.scrollTop=messagesBox.scrollHeight;messagesBox.scrollTo({top:messagesBox.scrollHeight,left:0,behavior:'auto'})};requestAnimationFrame(()=>{followLatest();requestAnimationFrame(followLatest)});setTimeout(followLatest,80)};
 
   window.jllOperationsHeartbeat=()=>{if(state.user)api('/api/admin/presenca',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({origem:presenceOrigin})}).catch(()=>{})};
 
