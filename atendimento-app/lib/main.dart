@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -83,6 +84,7 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
   String? deviceId;
   int progress = 0;
   String? loadError;
+  bool _handlingBack = false;
 
   @override
   void initState() {
@@ -201,17 +203,23 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
     }
   }
 
-  Future<bool> _handleBack() async {
+  Future<void> _handleBack() async {
+    if (_handlingBack) return;
+    _handlingBack = true;
     try {
-      final result = await controller.runJavaScriptReturningResult(
-        "JSON.stringify(Boolean(window.jllHandleAndroidBack && window.jllHandleAndroidBack()))",
-      );
-      final handled = result.toString().replaceAll('"', '') == 'true';
-      if (handled) return false;
-    } catch (_) {
-      // Mantém a tela atual caso a página ainda esteja carregando.
+      var handled = false;
+      try {
+        final result = await controller.runJavaScriptReturningResult(
+          "JSON.stringify(Boolean(window.jllHandleAndroidBack && window.jllHandleAndroidBack()))",
+        );
+        handled = result.toString().replaceAll('"', '') == 'true';
+      } catch (_) {
+        // Sem navegação interna disponível, o próximo passo é fechar o aplicativo.
+      }
+      if (!handled) await SystemNavigator.pop();
+    } finally {
+      _handlingBack = false;
     }
-    return false;
   }
 
   @override

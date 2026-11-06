@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -677,82 +678,93 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         received: true,
       ),
     ];
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('JLL Montador'),
-        actions: [
-          if (syncing)
-            const Padding(
-              padding: EdgeInsets.all(18),
-              child: SizedBox.square(
-                dimension: 17,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          IconButton(onPressed: sync, icon: const Icon(Icons.sync)),
-          TextButton.icon(
-            onPressed: logout,
-            icon: const Icon(Icons.logout),
-            label: const Text('Sair'),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          if (message != null)
-            MaterialBanner(
-              content: Text(message!),
-              actions: [
-                TextButton(
-                  onPressed: () => setState(() => message = null),
-                  child: const Text('OK'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (index != 0) {
+          setState(() => index = 0);
+          return;
+        }
+        await SystemNavigator.pop();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('JLL Montador'),
+          actions: [
+            if (syncing)
+              const Padding(
+                padding: EdgeInsets.all(18),
+                child: SizedBox.square(
+                  dimension: 17,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-              ],
+              ),
+            IconButton(onPressed: sync, icon: const Icon(Icons.sync)),
+            TextButton.icon(
+              onPressed: logout,
+              icon: const Icon(Icons.logout),
+              label: const Text('Sair'),
             ),
-          Expanded(
-            child: loading
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(onRefresh: sync, child: pages[index]),
-          ),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (value) => setState(() => index = value),
-        destinations: [
-          NavigationDestination(
-            icon: Badge(
-              label: Text('${pending.length}'),
-              child: const Icon(Icons.inbox_outlined),
+          ],
+        ),
+        body: Column(
+          children: [
+            if (message != null)
+              MaterialBanner(
+                content: Text(message!),
+                actions: [
+                  TextButton(
+                    onPressed: () => setState(() => message = null),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            Expanded(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(onRefresh: sync, child: pages[index]),
             ),
-            label: 'Aceitar',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              label: Text('${execution.length}'),
-              child: const Icon(Icons.build_outlined),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: index,
+          onDestinationSelected: (value) => setState(() => index = value),
+          destinations: [
+            NavigationDestination(
+              icon: Badge(
+                label: Text('${pending.length}'),
+                child: const Icon(Icons.inbox_outlined),
+              ),
+              label: 'Aceitar',
             ),
-            label: 'Executar',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              label: Text('${pendingTransfers.length}'),
-              child: const Icon(Icons.payments_outlined),
+            NavigationDestination(
+              icon: Badge(
+                label: Text('${execution.length}'),
+                child: const Icon(Icons.build_outlined),
+              ),
+              label: 'Executar',
             ),
-            label: 'A repassar',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              label: Text('${transfers.length}'),
-              child: const Icon(Icons.receipt_long_outlined),
+            NavigationDestination(
+              icon: Badge(
+                label: Text('${pendingTransfers.length}'),
+                child: const Icon(Icons.payments_outlined),
+              ),
+              label: 'A repassar',
             ),
-            label: 'Pagamentos',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            label: 'Recebidos',
-          ),
-        ],
+            NavigationDestination(
+              icon: Badge(
+                label: Text('${transfers.length}'),
+                child: const Icon(Icons.receipt_long_outlined),
+              ),
+              label: 'Pagamentos',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.account_balance_wallet_outlined),
+              label: 'Recebidos',
+            ),
+          ],
+        ),
       ),
     );
   }
