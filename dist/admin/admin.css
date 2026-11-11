@@ -218,3 +218,5 @@ html.app-mode #admin-menu-toggle{display:none!important}
 .multi-select-all input,.multi-select-options input{width:15px!important;height:15px;margin:1px 0 0;padding:0!important;flex:0 0 auto}
 .multi-select-options{max-height:210px;padding-top:3px;overflow:auto}
 .multi-select-options label:hover{border-radius:6px;background:#f4f7fa}
+/* O atributo hidden sempre prevalece sobre componentes com display próprio. */
+[hidden]{display:none!important}
