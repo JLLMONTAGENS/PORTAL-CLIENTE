@@ -11,6 +11,12 @@ const APP_MODE=new URLSearchParams(location.search).get('app')==='1';
 const canManageAll=()=>['ADMINISTRADOR','GESTOR'].includes(state.user?.perfil);
 const isAdministrator=()=>state.user?.perfil==='ADMINISTRADOR';
 const profileLabel=profile=>({ADMINISTRADOR:'Administrador',GESTOR:'Gestor',ATENDENTE:'Atendente'}[profile]||profile);
+const canAccessView=view=>{
+  const common=['attendances','internal-chat','history','quotes'];
+  if(common.includes(view))return true;
+  if(view==='supervision')return canManageAll();
+  return isAdministrator()&&['payments','users'].includes(view);
+};
 const multiSelectControls=new WeakMap();
 function enhanceMultiSelect(select){
   if(!select||multiSelectControls.has(select))return;
@@ -200,6 +206,7 @@ async function openConversation(id,{initial=true,restoreScrollTop=null,silent=fa
 function switchView(view){
   dashboard.classList.remove('sidebar-open');adminMenuToggle?.setAttribute('aria-expanded','false');
   if(APP_MODE&&!['attendances','internal-chat'].includes(view))view='attendances';
+  if(!canAccessView(view)){showError(new Error('Seu perfil não possui acesso a esta área.'));view='attendances'}
   const attendanceView=view==='attendances';
   if(!attendanceView)document.body.classList.remove('mobile-conversation-open');
   state.currentView=view;$('#attendances-view').hidden=!attendanceView;$('#history-view').hidden=view!=='history';$('#users-view').hidden=view!=='users';$('#quotes-view').hidden=view!=='quotes';$('#payments-view').hidden=view!=='payments';$('#internal-chat-view').hidden=view!=='internal-chat';$('#supervision-view').hidden=view!=='supervision';
