@@ -200,3 +200,20 @@ html.app-mode #admin-menu-toggle{display:none!important}
 .internal-thread{min-height:0;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
 .internal-messages{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .internal-thread form{min-height:62px;flex:0 0 auto}
+
+/* Dropdown de seleção múltipla com busca, inspirado nos filtros de ERP. */
+.quote-filters .native-multi-select{display:none!important}
+.multi-select-control{position:relative;min-width:0}
+.multi-select-control summary{display:flex;min-height:42px;padding:9px 11px;border:1px solid #d4dfdf;border-radius:9px;align-items:center;justify-content:space-between;gap:8px;background:#fff;color:#20343d;font-size:.76rem;cursor:pointer;list-style:none}
+.multi-select-control summary::-webkit-details-marker{display:none}
+.multi-select-control[open] summary{border-color:#E67E22;box-shadow:0 0 0 2px rgba(230,126,34,.12)}
+.multi-select-panel{position:absolute;z-index:80;top:calc(100% + 5px);left:0;width:max(100%,280px);max-width:min(420px,90vw);padding:10px;border:1px solid #ccd7df;border-radius:9px;background:#fff;box-shadow:0 14px 32px rgba(26,43,76,.18)}
+.multi-select-search{display:grid;grid-template-columns:auto 1fr auto;align-items:center;border:1px solid #cfd9df;border-radius:7px}
+.multi-select-search input{min-width:0;border:0!important;box-shadow:none!important}
+.multi-select-search span{padding-left:9px;font-size:1.1rem}
+.multi-select-search button{padding:6px 10px;border:0;background:transparent;color:#5e6e77;box-shadow:none}
+.multi-select-all,.multi-select-options label{display:flex;padding:7px 5px;align-items:flex-start;gap:8px;font-size:.74rem;cursor:pointer}
+.multi-select-all{margin-top:5px;border-bottom:1px solid #edf0f2}
+.multi-select-all input,.multi-select-options input{width:15px!important;height:15px;margin:1px 0 0;padding:0!important;flex:0 0 auto}
+.multi-select-options{max-height:210px;padding-top:3px;overflow:auto}
+.multi-select-options label:hover{border-radius:6px;background:#f4f7fa}

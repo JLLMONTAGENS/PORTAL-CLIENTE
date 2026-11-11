@@ -11,6 +11,19 @@ const APP_MODE=new URLSearchParams(location.search).get('app')==='1';
 const canManageAll=()=>['ADMINISTRADOR','GESTOR'].includes(state.user?.perfil);
 const isAdministrator=()=>state.user?.perfil==='ADMINISTRADOR';
 const profileLabel=profile=>({ADMINISTRADOR:'Administrador',GESTOR:'Gestor',ATENDENTE:'Atendente'}[profile]||profile);
+const multiSelectControls=new WeakMap();
+function enhanceMultiSelect(select){
+  if(!select||multiSelectControls.has(select))return;
+  select.classList.add('native-multi-select');
+  const details=document.createElement('details');details.className='multi-select-control';details.innerHTML='<summary><span>Nenhum selecionado</span><b aria-hidden="true">▾</b></summary><div class="multi-select-panel"><div class="multi-select-search"><span aria-hidden="true">⌕</span><input type="search" placeholder="Pesquisar" aria-label="Pesquisar opções"><button type="button" aria-label="Limpar pesquisa">×</button></div><label class="multi-select-all"><input type="checkbox"> <strong>Selecionar todos</strong></label><div class="multi-select-options"></div></div>';select.insertAdjacentElement('afterend',details);
+  const search=details.querySelector('input[type="search"]'),clear=details.querySelector('.multi-select-search button'),all=details.querySelector('.multi-select-all input'),optionsBox=details.querySelector('.multi-select-options'),summary=details.querySelector('summary span');
+  const refresh=()=>{const selected=[...select.options].filter(option=>option.selected);summary.textContent=!selected.length?'Nenhum selecionado':selected.length===1?selected[0].textContent:`${selected.length} selecionados`;optionsBox.innerHTML=[...select.options].map((option,index)=>`<label data-search="${escapeHtml(option.textContent.toLowerCase())}"><input type="checkbox" data-option-index="${index}" ${option.selected?'checked':''}> <span>${escapeHtml(option.textContent)}</span></label>`).join('');all.checked=select.options.length>0&&selected.length===select.options.length;all.indeterminate=selected.length>0&&selected.length<select.options.length};
+  optionsBox.addEventListener('change',event=>{const checkbox=event.target.closest('[data-option-index]');if(!checkbox)return;select.options[Number(checkbox.dataset.optionIndex)].selected=checkbox.checked;refresh();select.dispatchEvent(new Event('change',{bubbles:true}))});
+  all.addEventListener('change',()=>{[...select.options].forEach(option=>option.selected=all.checked);refresh();select.dispatchEvent(new Event('change',{bubbles:true}))});
+  const filter=()=>{const term=search.value.trim().toLowerCase();optionsBox.querySelectorAll('label').forEach(label=>label.hidden=Boolean(term&&!label.dataset.search.includes(term)))};search.addEventListener('input',filter);clear.addEventListener('click',()=>{search.value='';filter();search.focus()});details.addEventListener('toggle',()=>{if(details.open)setTimeout(()=>search.focus(),0)});multiSelectControls.set(select,{refresh});refresh();
+}
+const refreshMultiSelect=select=>multiSelectControls.get(select)?.refresh();
+document.querySelectorAll('.quote-filters select[multiple]').forEach(enhanceMultiSelect);
 document.documentElement.classList.toggle('app-mode',APP_MODE);
 let pendingPushDevice=null;
 async function registerPendingPushDevice(){if(!APP_MODE||!state.user||!pendingPushDevice)return;try{await api('/api/admin/dispositivo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pendingPushDevice)});pendingPushDevice=null}catch(error){console.warn('Dispositivo ainda não registrado:',error.message)}}
@@ -233,6 +246,7 @@ function populateQuoteFiltersV2(){
   const assembler=$('#quote-assembler'),attendant=$('#quote-attendant'),assemblerValues=selectedValues('#quote-assembler'),attendantValues=selectedValues('#quote-attendant');
   assembler.innerHTML=state.quoteAssemblers.map(item=>`<option value="${item.id}" ${assemblerValues.includes(String(item.id))?'selected':''}>${escapeHtml(item.nome)}</option>`).join('');
   attendant.innerHTML=state.quoteAttendants.map(item=>`<option value="${item.id}" ${attendantValues.includes(String(item.id))?'selected':''}>${escapeHtml(item.nome_exibicao)}</option>`).join('');
+  refreshMultiSelect(assembler);refreshMultiSelect(attendant);
 }
 
 function renderQuotesV2(){
