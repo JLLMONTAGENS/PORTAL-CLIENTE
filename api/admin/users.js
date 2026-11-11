@@ -26,7 +26,7 @@ module.exports=async function handler(req,res){
       if(!validLogin(login))return res.status(400).json({error:'O login deve ter de 3 a 80 caracteres e usar apenas letras, números, ponto, traço, sublinhado ou @.'});
       if(!validEmail(email))return res.status(400).json({error:'Informe um e-mail válido para recuperação de senha.'});
       if(senha.length<6)return res.status(400).json({error:'A senha deve ter pelo menos 6 caracteres.'});
-      if(!['ADMINISTRADOR','ATENDENTE'].includes(perfil))return res.status(400).json({error:'Permissão inválida.'});
+      if(!['ADMINISTRADOR','GESTOR','ATENDENTE'].includes(perfil))return res.status(400).json({error:'Permissão inválida.'});
       const rows=await sql`INSERT INTO usuarios_atendimento (nome,nome_exibicao,nome_completo,login,email,senha_hash,perfil) VALUES (${nomeExibicao},${nomeExibicao},${nomeCompleto},${login},${email},${hashPassword(senha)},${perfil}) RETURNING id,nome_exibicao,nome_completo,login,email,perfil,ativo,criado_em`;
       return res.status(201).json({usuario:publicUser(rows[0])});
     }
@@ -39,7 +39,7 @@ module.exports=async function handler(req,res){
       const senha=String(req.body?.senha||'');
       const perfil=String(req.body?.perfil||'ATENDENTE').toUpperCase();
       const ativo=req.body?.ativo!==false;
-      if(!id||nomeExibicao.length<2||nomeCompleto.length<3||!validLogin(login)||!validEmail(email)||!['ADMINISTRADOR','ATENDENTE'].includes(perfil))return res.status(400).json({error:'Preencha os dados do usuário e informe um e-mail válido.'});
+      if(!id||nomeExibicao.length<2||nomeCompleto.length<3||!validLogin(login)||!validEmail(email)||!['ADMINISTRADOR','GESTOR','ATENDENTE'].includes(perfil))return res.status(400).json({error:'Preencha os dados do usuário e informe um e-mail válido.'});
       if(id===session.id&&(!ativo||perfil!=='ADMINISTRADOR'))return res.status(400).json({error:'Você não pode desativar ou remover a própria permissão de administrador.'});
       if(senha&&senha.length<6)return res.status(400).json({error:'A nova senha deve ter pelo menos 6 caracteres.'});
       let rows;

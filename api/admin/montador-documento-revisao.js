@@ -1,12 +1,13 @@
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {canManageAll}=require('./_permissions');
 const c=require('../montadores/_core');
 
 module.exports=async function(req,res){
   if(req.method!=='PATCH')return res.status(405).json({error:'Método não permitido'});
   const user=await authenticatedUser(req);
   if(!user)return res.status(401).json({error:'Sessão expirada.'});
-  if(user.perfil!=='ADMINISTRADOR')return res.status(403).json({error:'Acesso negado.'});
+  if(!canManageAll(user))return res.status(403).json({error:'Acesso negado.'});
   try{
     const id=String(req.body?.id||''),status=String(req.body?.status||'').toUpperCase();
     if(!['APROVADO','REJEITADO'].includes(status))return res.status(400).json({error:'Revisão inválida.'});

@@ -1,5 +1,6 @@
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {canManageAll}=require('./_permissions');
 const {notifyAssignment}=require('../montadores/_push');
 
 module.exports=async function handler(req,res){
@@ -14,7 +15,7 @@ module.exports=async function handler(req,res){
     const atendimento=rows[0];
     if(!atendimento)return res.status(404).json({error:'Atendimento não encontrado.'});
     if(['SERVICO_FINALIZADO','CANCELADO'].includes(atendimento.status))return res.status(409).json({error:'O atendimento já foi encerrado.'});
-    if(user.perfil!=='ADMINISTRADOR'&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode atribuir o montador.'});
+    if(!canManageAll(user)&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode atribuir o montador.'});
     if(!atendimento.orcamento_id)return res.status(409).json({error:'Gere o orçamento antes de atribuir o montador.'});
     let percentual=0;
     if(montadorId){

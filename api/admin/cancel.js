@@ -1,5 +1,6 @@
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {canManageAll}=require('./_permissions');
 
 module.exports=async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({error:'Método não permitido'});
@@ -11,7 +12,7 @@ module.exports=async function handler(req,res){
     if(!atendimento)return res.status(404).json({error:'Atendimento não encontrado.'});
     if(atendimento.status==='SERVICO_FINALIZADO')return res.status(409).json({error:'Atendimentos finalizados não podem ser cancelados.'});
     if(atendimento.status==='CANCELADO')return res.status(409).json({error:'Este atendimento já foi cancelado.'});
-    if(user.perfil!=='ADMINISTRADOR'&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável ou um administrador pode cancelar o atendimento.'});
+    if(!canManageAll(user)&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável, gestor ou administrador pode cancelar o atendimento.'});
     const existingQuotes=await sql`SELECT id,status_orcamento FROM orcamentos WHERE atendimento_id=${atendimentoId} LIMIT 1`,existingQuote=existingQuotes[0]||null;
     if(existingQuote?.status_orcamento==='FINALIZADO')return res.status(409).json({error:'Este atendimento possui um orçamento finalizado e não pode ser cancelado.'});
     const quotes=existingQuote?await sql`UPDATE orcamentos SET status_orcamento='CANCELADO',link_pagamento=NULL,atualizado_em=NOW() WHERE id=${existingQuote.id} RETURNING id`:[];

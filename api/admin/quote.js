@@ -1,5 +1,6 @@
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {canManageAll}=require('./_permissions');
 const {notifyAssignment}=require('../montadores/_push');
 
 const formatMoney=value=>Number(value).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -12,7 +13,9 @@ module.exports=async function handler(req,res){
   try{
     const atendimentoId=String(req.body?.atendimentoId||'');
     const descricaoServico=String(req.body?.descricaoServico||'').trim();
-    const agendadoPara=String(req.body?.agendadoPara||'');
+    const agendadoInformado=String(req.body?.agendadoPara||'');
+    const dataAgendamento=/^\d{4}-\d{2}-\d{2}/.exec(agendadoInformado)?.[0]||'';
+    const agendadoPara=dataAgendamento?`${dataAgendamento}T12:00:00-03:00`:agendadoInformado;
     const endereco=String(req.body?.endereco||'').trim();
     const bairro=String(req.body?.bairro||'').trim();
     const cidade=String(req.body?.cidade||'').trim();
@@ -25,7 +28,7 @@ module.exports=async function handler(req,res){
     const previousQuote=(await sql`SELECT montador_id FROM orcamentos WHERE atendimento_id=${atendimentoId} LIMIT 1`)[0]||null;
     const atendimentos=await sql`SELECT id,numero_atendimento,nome_cliente,telefone,atendente_id FROM atendimentos WHERE id=${atendimentoId} AND status NOT IN ('SERVICO_FINALIZADO','CANCELADO') LIMIT 1`;
     const atendimento=atendimentos[0];if(!atendimento)return res.status(404).json({error:'Atendimento não encontrado ou finalizado.'});
-    if(user.perfil!=='ADMINISTRADOR'&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode gerar o orçamento.'});
+    if(!canManageAll(user)&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode gerar o orçamento.'});
     let percentualRepasse=0;if(montadorId){const montador=await sql`SELECT id,percentual_repasse FROM montadores WHERE id=${montadorId} AND ativo=TRUE LIMIT 1`;if(!montador[0])return res.status(400).json({error:'Montador inválido ou inativo.'});percentualRepasse=Number(montador[0].percentual_repasse||0)}
     const valorMontador=(Number(valor)*percentualRepasse/100).toFixed(2);
     const status=montadorId?'ATRIBUIDO_MONTADOR':'GEROU_ORCAMENTO';

@@ -1,18 +1,19 @@
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {canManageAll}=require('./_permissions');
 const {notifyAssignment}=require('../montadores/_push');
 const money=value=>{const raw=String(value??'0').trim().replace(/[^\d,.-]/g,'');const normalized=raw.includes(',')?raw.replace(/\./g,'').replace(',','.'):raw;const amount=Number(normalized);return Number.isFinite(amount)&&amount>=0?amount.toFixed(2):null};
 
 module.exports=async function handler(req,res){
   if(req.method!=='PATCH')return res.status(405).json({error:'Método não permitido'});
   const user=await authenticatedUser(req);if(!user)return res.status(401).json({error:'Sessão expirada.'});
-  if(user.perfil!=='ADMINISTRADOR')return res.status(403).json({error:'Somente administradores podem gerenciar orçamentos.'});
+  if(!canManageAll(user))return res.status(403).json({error:'Somente gestores e administradores podem gerenciar orçamentos.'});
   try{
     const id=String(req.body?.id||''),montadorId=String(req.body?.montadorId||'').trim()||null;
     const statusPagCliente=String(req.body?.statusPagCliente||''),statusPgMontador=String(req.body?.statusPgMontador||'');
     const adicionalMontador=money(req.body?.adicionalMontador);
     if(!id||!['PENDENTE','PAGO'].includes(statusPagCliente)||!['PENDENTE','PAGO'].includes(statusPgMontador)||adicionalMontador===null)return res.status(400).json({error:'Dados financeiros inválidos.'});
-    const sql=getDatabase(),existing=await sql`SELECT * FROM orcamentos WHERE id=${id} LIMIT 1`;
+    const sql=getDatabase(),existing=await sql`SELECT o.*,a.atendente_id FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id WHERE o.id=${id} LIMIT 1`;
     if(!existing[0])return res.status(404).json({error:'Orçamento não encontrado.'});
     if(existing[0].status_orcamento==='CANCELADO')return res.status(409).json({error:'Orçamentos cancelados são somente para consulta.'});
     if(existing[0].status_pag_cliente==='PAGO'&&statusPagCliente==='PENDENTE')return res.status(409).json({error:'Um pagamento confirmado não pode voltar para pendente.'});

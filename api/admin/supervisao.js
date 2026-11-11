@@ -1,10 +1,11 @@
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {canManageAll}=require('./_permissions');
 const {ensureChatSchema}=require('./_chat-schema');
 
 module.exports=async function handler(req,res){
   const user=await authenticatedUser(req);if(!user)return res.status(401).json({error:'Sessão expirada.'});
-  if(user.perfil!=='ADMINISTRADOR')return res.status(403).json({error:'A supervisão é exclusiva para administradores.'});
+  if(!canManageAll(user))return res.status(403).json({error:'A supervisão é exclusiva para gestores e administradores.'});
   const sql=getDatabase();
   try{
     await ensureChatSchema(sql);

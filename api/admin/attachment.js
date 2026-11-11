@@ -1,6 +1,7 @@
 const {put}=require('@vercel/blob');
 const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
+const {canManageAll}=require('./_permissions');
 
 const allowedTypes=new Set(['image/jpeg','image/png','image/webp','application/pdf']);
 const hasValidSignature=(buffer,mimeType)=>{
@@ -27,7 +28,7 @@ module.exports=async function handler(req,res){
     const sql=getDatabase();
     const allowed=await sql`SELECT id,atendente_id,status FROM atendimentos WHERE id=${atendimentoId} LIMIT 1`;
     if(!allowed[0]||['SERVICO_FINALIZADO','CANCELADO'].includes(allowed[0].status))return res.status(404).json({error:'Atendimento não encontrado ou encerrado.'});
-    if(allowed[0].atendente_id!==user.id&&user.perfil!=='ADMINISTRADOR')return res.status(409).json({error:'Assuma ou receba este atendimento antes de enviar anexos.'});
+    if(allowed[0].atendente_id!==user.id&&!canManageAll(user))return res.status(409).json({error:'Assuma ou receba este atendimento antes de enviar anexos.'});
     const blob=await put(`atendimentos/${atendimentoId}/${Date.now()}-${fileName}`,fileBuffer,{access:'private',contentType:mimeType,addRandomSuffix:true});
     const label=mimeType==='application/pdf'?`Documento enviado: ${fileName}`:'Imagem enviada';
     const messages=await sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,remetente_id,texto) VALUES (${atendimentoId},'ATENDENTE',${user.id},${label}) RETURNING id,tipo_remetente,remetente_id,texto,criado_em`;
