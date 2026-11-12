@@ -5,7 +5,7 @@ const {notifyAttendance}=require('../admin/_push');
 const cleanId=value=>String(value||'').trim();
 const publicService=row=>{
   const accepted=['ACEITO','EM_EXECUCAO','CONCLUIDO'].includes(row.status_execucao_montador);
-  const base={id:row.id,atendimentoId:row.atendimento_id,numeroAtendimento:row.numero_atendimento,descricaoServico:row.descricao_servico,bairro:row.bairro,cidade:row.cidade,valorRepasse:Number(row.valor_montador||0)+Number(row.adicional_montador||0),agendadoPara:row.agendado_para,status:row.status_execucao_montador,aceitoEm:row.aceito_montador_em,iniciadoEm:row.iniciado_montador_em,concluidoEm:row.concluido_montador_em,fotos:Number(row.fotos||0),pagamentoId:row.pagamento_id||null};
+  const base={id:row.id,atendimentoId:row.atendimento_id,numeroAtendimento:row.numero_atendimento,descricaoServico:row.descricao_servico,bairro:row.bairro,cidade:row.cidade,valorRepasse:Number(row.valor_montador||0)+Number(row.adicional_montador||0),agendadoPara:row.agendado_para,status:row.status_execucao_montador,statusPagamento:row.status_pg_montador==='PAGO'?'PAGO':'PENDENTE',aceitoEm:row.aceito_montador_em,iniciadoEm:row.iniciado_montador_em,concluidoEm:row.concluido_montador_em,fotos:Number(row.fotos||0),pagamentoId:row.pagamento_id||null};
   if(!accepted)return base;
   return {...base,nomeCliente:row.nome_cliente,telefoneCliente:row.telefone_cliente,telefoneAlternativo:row.telefone_alternativo,endereco:row.endereco,referencia:row.referencia};
 };
@@ -20,9 +20,9 @@ module.exports=async function(req,res){
     if(req.method==='GET'){
       const view=String(req.query?.view||'TODOS').toUpperCase();
       const rows=await sql`SELECT o.*,a.nome_cliente,a.telefone AS telefone_cliente,(SELECT COUNT(*) FROM fotos_servico_montador f WHERE f.orcamento_id=o.id)::int AS fotos,pi.pagamento_id FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id LEFT JOIN pagamentos_montador_itens pi ON pi.orcamento_id=o.id WHERE o.montador_id=${assembler.id} ORDER BY o.agendado_para ASC,o.criado_em DESC`;
-      const from=String(req.query?.de||''),to=String(req.query?.ate||'');
+      const from=String(req.query?.de||''),to=String(req.query?.ate||''),paymentStatus=String(req.query?.pagamento||'TODOS').toUpperCase();
       const completedInRange=row=>{if(!row.concluido_montador_em)return false;const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(row.concluido_montador_em));return(!from||day>=from)&&(!to||day<=to)};
-      const filtered=rows.filter(row=>view==='TODOS'||(view==='PENDENTES_ACEITE'&&row.status_execucao_montador==='PENDENTE_ACEITE')||(view==='PENDENTES_EXECUCAO'&&['ACEITO','EM_EXECUCAO'].includes(row.status_execucao_montador))||(view==='PENDENTES_REPASSE'&&row.status_execucao_montador==='CONCLUIDO'&&!row.pagamento_id)||(view==='REALIZADAS'&&row.status_execucao_montador==='CONCLUIDO'&&completedInRange(row)));
+      const filtered=rows.filter(row=>view==='TODOS'||(view==='PENDENTES_ACEITE'&&row.status_execucao_montador==='PENDENTE_ACEITE')||(view==='PENDENTES_EXECUCAO'&&['ACEITO','EM_EXECUCAO'].includes(row.status_execucao_montador))||(view==='PENDENTES_REPASSE'&&row.status_execucao_montador==='CONCLUIDO'&&!row.pagamento_id)||(view==='REALIZADAS'&&row.status_execucao_montador==='CONCLUIDO'&&completedInRange(row)&&(paymentStatus==='TODOS'||(paymentStatus==='PAGO'&&row.status_pg_montador==='PAGO')||(paymentStatus==='PENDENTE'&&row.status_pg_montador!=='PAGO'))));
       return res.status(200).json({servicos:filtered.map(publicService)});
     }
     if(req.method!=='POST')return res.status(405).json({error:'Método não permitido'});

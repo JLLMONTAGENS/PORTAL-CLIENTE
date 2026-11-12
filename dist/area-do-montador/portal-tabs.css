@@ -41,6 +41,10 @@
 .completed-services-report th { background: #1a2b4c; color: #fff; font-size: .66rem; text-transform: uppercase; }
 .completed-services-report td small { display: block; margin-top: 3px; color: #667085; }
 .completed-services-report tbody tr:last-child td { border-bottom: 0; }
+.operation-filter select { min-width: 140px; padding: 9px; border: 1px solid #ccd6e3; border-radius: 7px; background: #fff; color: #1a2b4c; font: inherit; }
+.payment-state { display: inline-flex; padding: 5px 8px; border-radius: 999px; font-size: .68rem; font-weight: 850; }
+.payment-state-pago { background: #d9f4e4; color: #11663b; }
+.payment-state-pendente { background: #fff0e5; color: #9e4e0d; }
 @media (max-width: 800px) {
   .portal-tabs { margin: 0 -20px 22px; padding: 0 10px; }
   .portal-tabs button { flex: 1; padding: 12px 8px; font-size: .8rem; }

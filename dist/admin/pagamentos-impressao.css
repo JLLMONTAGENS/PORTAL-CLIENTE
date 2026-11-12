@@ -5,6 +5,18 @@
 .print-select { display: flex; align-items: center; gap: 7px; padding: 10px 20px 0; color: #526174; font-size: .72rem; font-weight: 800; }
 .print-select input { width: 17px; height: 17px; accent-color: #e67e22; }
 .payment.print-selected { outline: 2px solid rgba(230,126,34,.35); }
+.jll-dialog { width: min(520px, calc(100% - 28px)); padding: 0; border: 0; border-radius: 16px; color: #1a2b4c; box-shadow: 0 24px 70px rgba(10,25,50,.28); }
+.jll-dialog::backdrop { background: rgba(12,27,52,.68); backdrop-filter: blur(3px); }
+.jll-dialog form { display: grid; gap: 14px; padding: 24px; }
+.jll-dialog h2, .jll-dialog p { margin: 0; }
+.jll-dialog p { color: #667085; line-height: 1.5; }
+.dialog-brand { display: flex; align-items: center; justify-content: space-between; color: #c86617; font-size: .68rem; font-weight: 900; letter-spacing: .13em; }
+.dialog-brand button { padding: 2px 9px; background: transparent; color: #657184; font-size: 1.65rem; line-height: 1; }
+.jll-dialog label { display: grid; gap: 7px; font-size: .78rem; font-weight: 800; }
+.jll-dialog textarea { width: 100%; resize: vertical; padding: 12px; border: 1px solid #cbd5e2; border-radius: 9px; color: #1a2b4c; font: inherit; }
+.jll-dialog textarea:focus { outline: 3px solid rgba(230,126,34,.18); border-color: #e67e22; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.dialog-actions .secondary { border: 1px solid #cbd5e2; background: #fff; color: #1a2b4c; }
 @media (max-width: 680px) {
   .section-tools { align-items: stretch; flex-direction: column; width: 100%; }
   .section-tools label, .section-tools button { width: 100%; }
