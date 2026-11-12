@@ -1163,20 +1163,55 @@ class _PaymentCardState extends State<PaymentCard> {
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const Divider(),
-            ...(item['itens'] as List? ?? []).map(
-              (line) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '#${line['numeroAtendimento']} · ${line['descricaoServico']}',
-                      ),
-                    ),
-                    Text(formatMoney(line['valor'])),
-                  ],
-                ),
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              title: Text(
+                '${(item['itens'] as List? ?? []).length} atendimento(s) neste pagamento',
+                style: const TextStyle(fontWeight: FontWeight.w800),
               ),
+              children: (item['itens'] as List? ?? []).map<Widget>((line) {
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 7),
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F6F8),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '#${line['numeroAtendimento']} · ${line['nomeCliente'] ?? 'Cliente não informado'}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${line['bairro'] ?? 'Bairro não informado'} · Finalizado em ${formatDate(line['concluidoEm'])}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.blueGrey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        formatMoney(line['valor']),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
             if (item['nfseNome'] != null)
               Padding(

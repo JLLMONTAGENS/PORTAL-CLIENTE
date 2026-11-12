@@ -29,7 +29,16 @@ const resetToken=new URLSearchParams(location.search).get('redefinir');if(resetT
 const moneyBR=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const dateInput=value=>{const date=value?new Date(value):new Date();return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(date)};
 const operationId=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(16).slice(2)}`;
-let operationReady=false;
+let operationReady=false,operationCurrentView='PENDENTES_ACEITE',assemblerApproved=false;
+
+function activatePortalTab(tab){
+  const operation=tab==='operation'&&assemblerApproved;
+  document.querySelectorAll('[data-portal-tab]').forEach(button=>{const active=button.dataset.portalTab===(operation?'operation':'profile');button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active))});
+  $('#profile-tab-panel').hidden=operation;
+  $('#operation-tab-panel').hidden=!operation;
+  if(operation)loadOperation(operationCurrentView);
+}
+document.querySelector('.portal-tabs').addEventListener('click',event=>{const button=event.target.closest('[data-portal-tab]');if(button&&!button.hidden)activatePortalTab(button.dataset.portalTab)});
 
 function setupOperations(){
   if(operationReady)return;
@@ -38,10 +47,10 @@ function setupOperations(){
   const section=document.createElement('section');
   section.id='assembler-operations';
   section.className='operation-area';
-  section.innerHTML=`<div class="operation-heading"><span>OPERAÇÃO DO MONTADOR</span><h2>Serviços e repasses</h2><p>No navegador você pode aceitar propostas e consultar os atendimentos. Fotos e finalização são exclusivas do aplicativo móvel.</p></div><nav class="operation-tabs" aria-label="Áreas operacionais"><button data-operation-view="PENDENTES_ACEITE" class="active">Para aceitar</button><button data-operation-view="PENDENTES_EXECUCAO">Para executar</button><button data-operation-view="PENDENTES_REPASSE">Repasse pendente</button><button data-operation-view="PAGAMENTOS">Pagamentos gerados</button><button data-operation-view="RECEBIDOS">Repasses recebidos</button></nav><div id="operation-history-filter" class="operation-filter" hidden><label>De<input id="operation-from" type="date" value="${dateInput(start)}"></label><label>Até<input id="operation-to" type="date" value="${dateInput(new Date())}"></label><button id="operation-filter-button" type="button" class="secondary">Filtrar</button></div><p id="operation-message" class="form-message" role="status"></p><div id="operation-list" class="operation-list"></div>`;
-  statusView.appendChild(section);
-  section.querySelector('.operation-tabs').addEventListener('click',event=>{const button=event.target.closest('[data-operation-view]');if(!button)return;section.querySelectorAll('[data-operation-view]').forEach(item=>item.classList.toggle('active',item===button));loadOperation(button.dataset.operationView)});
-  section.querySelector('#operation-filter-button').onclick=()=>loadOperation('RECEBIDOS');
+  section.innerHTML=`<div class="operation-heading"><span>OPERAÇÃO DO MONTADOR</span><h2>Serviços e repasses</h2><p>No navegador você pode aceitar propostas e consultar os atendimentos. Fotos e finalização são exclusivas do aplicativo móvel.</p></div><nav class="operation-tabs" aria-label="Áreas operacionais"><button data-operation-view="PENDENTES_ACEITE" class="active">Para aceitar</button><button data-operation-view="PENDENTES_EXECUCAO">Para executar</button><button data-operation-view="PENDENTES_REPASSE">Repasse pendente</button><button data-operation-view="PAGAMENTOS">Pagamentos gerados</button><button data-operation-view="RECEBIDOS">Repasses recebidos</button><button data-operation-view="REALIZADAS">Montagens realizadas</button></nav><div id="operation-history-filter" class="operation-filter" hidden><label>De<input id="operation-from" type="date" value="${dateInput(start)}"></label><label>Até<input id="operation-to" type="date" value="${dateInput(new Date())}"></label><button id="operation-filter-button" type="button" class="secondary">Filtrar</button></div><p id="operation-message" class="form-message" role="status"></p><div id="operation-list" class="operation-list"></div>`;
+  $('#operation-tab-panel').appendChild(section);
+  section.querySelector('.operation-tabs').addEventListener('click',event=>{const button=event.target.closest('[data-operation-view]');if(!button)return;operationCurrentView=button.dataset.operationView;section.querySelectorAll('[data-operation-view]').forEach(item=>item.classList.toggle('active',item===button));loadOperation(operationCurrentView)});
+  section.querySelector('#operation-filter-button').onclick=()=>loadOperation(operationCurrentView);
   section.querySelector('#operation-list').addEventListener('click',operationClick);
   section.querySelector('#operation-list').addEventListener('submit',invoiceSubmit);
 }
@@ -54,18 +63,21 @@ function serviceCard(service,view){
 }
 
 function paymentCard(payment,received=false){
-  const items=payment.itens.map(item=>`<li><span>#${escapeHtml(item.numeroAtendimento)} · ${escapeHtml(item.descricaoServico)}</span><strong>${moneyBR(item.valor)}</strong></li>`).join('');
+  const items=payment.itens.map(item=>`<li><span class="payment-item-main"><strong>#${escapeHtml(item.numeroAtendimento)} · ${escapeHtml(item.nomeCliente||'Cliente não informado')}</strong><small>${escapeHtml(item.bairro||'Bairro não informado')} · Finalizado em ${formatDate(item.concluidoEm)}</small></span><strong>${moneyBR(item.valor)}</strong></li>`).join('');
   const invoice=['AGUARDANDO_NFSE','NFSE_REJEITADA'].includes(payment.status)?`<form class="payment-invoice-form" data-payment-id="${payment.id}"><p>A NFS-e deve ter o valor total exato deste pagamento.</p><input name="valorTotal" type="hidden" value="${payment.valorTotal}"><input name="file" type="file" accept="application/pdf,image/jpeg,image/png" required><button type="submit">Anexar NFS-e de ${moneyBR(payment.valorTotal)}</button><p class="form-message"></p></form>`:'';
-  return `<article class="payment-card"><header><div><small>PAGAMENTO #${escapeHtml(payment.numero)} · ${escapeHtml(payment.documentoBancario)}</small><h3>${moneyBR(payment.valorTotal)}</h3></div><span class="payment-status">${escapeHtml(payment.status)}</span></header><ul>${items}</ul>${payment.nfseNome?`<p>NFS-e: <strong>${escapeHtml(payment.nfseNome)}</strong> · ${escapeHtml(payment.nfseStatus||'')}</p>`:''}${invoice}${received?`<p>Pago em ${formatDate(payment.pagoEm)}</p>`:''}</article>`;
+  return `<article class="payment-card"><header><div><small>PAGAMENTO #${escapeHtml(payment.numero)} · ${escapeHtml(payment.documentoBancario)}</small><h3>${moneyBR(payment.valorTotal)}</h3></div><span class="payment-status">${escapeHtml(payment.status)}</span></header><details class="payment-items"><summary>${payment.itens.length} atendimento${payment.itens.length===1?'':'s'} neste pagamento</summary><ul>${items}</ul></details>${payment.nfseNome?`<p>NFS-e: <strong>${escapeHtml(payment.nfseNome)}</strong> · ${escapeHtml(payment.nfseStatus||'')}</p>`:''}${invoice}${received?`<p>Pago em ${formatDate(payment.pagoEm)}</p>`:''}</article>`;
 }
+
+function completedServicesReport(services){return `<div class="completed-services-report"><table><thead><tr><th>Atendimento / cliente</th><th>Bairro</th><th>Finalização</th><th>Detalhes do serviço</th></tr></thead><tbody>${services.map(service=>`<tr><td><strong>#${escapeHtml(service.numeroAtendimento)}</strong><small>${escapeHtml(service.nomeCliente||'Cliente não informado')}</small></td><td>${escapeHtml(service.bairro||'Não informado')}</td><td>${formatDate(service.concluidoEm)}</td><td>${escapeHtml(service.descricaoServico||'Serviço não informado')}</td></tr>`).join('')}</tbody></table></div>`}
 
 async function loadOperation(view='PENDENTES_ACEITE'){
   setupOperations();
   const list=$('#operation-list'),message=$('#operation-message'),filter=$('#operation-history-filter');
-  filter.hidden=view!=='RECEBIDOS';message.textContent='';list.innerHTML='<p>Carregando…</p>';
+  operationCurrentView=view;filter.hidden=!['RECEBIDOS','REALIZADAS'].includes(view);message.textContent='';list.innerHTML='<p>Carregando…</p>';
   try{
-    if(['PENDENTES_ACEITE','PENDENTES_EXECUCAO','PENDENTES_REPASSE'].includes(view)){
-      const data=await api(`/api/montadores/servicos?view=${view}`);list.innerHTML=data.servicos.length?data.servicos.map(item=>serviceCard(item,view)).join(''):'<p class="operation-empty">Nenhum serviço nesta situação.</p>';
+    if(['PENDENTES_ACEITE','PENDENTES_EXECUCAO','PENDENTES_REPASSE','REALIZADAS'].includes(view)){
+      const dates=view==='REALIZADAS'?`&de=${encodeURIComponent($('#operation-from').value)}&ate=${encodeURIComponent($('#operation-to').value)}`:'';
+      const data=await api(`/api/montadores/servicos?view=${view}${dates}`);list.innerHTML=data.servicos.length?(view==='REALIZADAS'?completedServicesReport(data.servicos):data.servicos.map(item=>serviceCard(item,view)).join('')):'<p class="operation-empty">Nenhum serviço nesta situação.</p>';
     }else{
       const query=view==='RECEBIDOS'?`?view=RECEBIDOS&historico=1&de=${encodeURIComponent($('#operation-from').value)}&ate=${encodeURIComponent($('#operation-to').value)}`:'';
       const data=await api('/api/montadores/pagamentos'+query);list.innerHTML=data.pagamentos.length?data.pagamentos.map(item=>paymentCard(item,view==='RECEBIDOS')).join(''):'<p class="operation-empty">Nenhum pagamento nesta situação.</p>';
@@ -86,4 +98,4 @@ async function invoiceSubmit(event){
 }
 
 const loadBaseStatus=loadStatus;
-loadStatus=async function(){await loadBaseStatus();const data=await api('/api/montadores/status');if(data.montador.statusCadastro==='APROVADO'){setupOperations();await loadOperation('PENDENTES_ACEITE')}};
+loadStatus=async function(){await loadBaseStatus();const data=await api('/api/montadores/status');assemblerApproved=data.montador.statusCadastro==='APROVADO';$('#operation-tab').hidden=!assemblerApproved;if(assemblerApproved)setupOperations();activatePortalTab('profile')};

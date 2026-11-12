@@ -20,7 +20,9 @@ module.exports=async function(req,res){
     if(req.method==='GET'){
       const view=String(req.query?.view||'TODOS').toUpperCase();
       const rows=await sql`SELECT o.*,a.nome_cliente,a.telefone AS telefone_cliente,(SELECT COUNT(*) FROM fotos_servico_montador f WHERE f.orcamento_id=o.id)::int AS fotos,pi.pagamento_id FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id LEFT JOIN pagamentos_montador_itens pi ON pi.orcamento_id=o.id WHERE o.montador_id=${assembler.id} ORDER BY o.agendado_para ASC,o.criado_em DESC`;
-      const filtered=rows.filter(row=>view==='TODOS'||(view==='PENDENTES_ACEITE'&&row.status_execucao_montador==='PENDENTE_ACEITE')||(view==='PENDENTES_EXECUCAO'&&['ACEITO','EM_EXECUCAO'].includes(row.status_execucao_montador))||(view==='PENDENTES_REPASSE'&&row.status_execucao_montador==='CONCLUIDO'&&!row.pagamento_id));
+      const from=String(req.query?.de||''),to=String(req.query?.ate||'');
+      const completedInRange=row=>{if(!row.concluido_montador_em)return false;const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(row.concluido_montador_em));return(!from||day>=from)&&(!to||day<=to)};
+      const filtered=rows.filter(row=>view==='TODOS'||(view==='PENDENTES_ACEITE'&&row.status_execucao_montador==='PENDENTE_ACEITE')||(view==='PENDENTES_EXECUCAO'&&['ACEITO','EM_EXECUCAO'].includes(row.status_execucao_montador))||(view==='PENDENTES_REPASSE'&&row.status_execucao_montador==='CONCLUIDO'&&!row.pagamento_id)||(view==='REALIZADAS'&&row.status_execucao_montador==='CONCLUIDO'&&completedInRange(row)));
       return res.status(200).json({servicos:filtered.map(publicService)});
     }
     if(req.method!=='POST')return res.status(405).json({error:'Método não permitido'});
