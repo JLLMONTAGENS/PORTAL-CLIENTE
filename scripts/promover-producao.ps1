@@ -4,7 +4,8 @@ param(
     [switch]$SubstituirBancoProducao,
     [switch]$SemAuditoriaVercel,
     [string]$Confirmacao = "",
-    [string]$ConfirmacaoBanco = ""
+    [string]$ConfirmacaoBanco = "",
+    [string]$ConfirmacaoInfra = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,6 +16,7 @@ $DiretorioInicial = (Get-Location).Path
 
 $ConfirmacaoEsperada = "PROMOVER HOMOLOGACAO PARA PRODUCAO"
 $ConfirmacaoBancoEsperada = "SUBSTITUIR BANCO DE PRODUCAO"
+$ConfirmacaoInfraEsperada = "CONFIRMO INFRAESTRUTURA SENSIVEL"
 $MarcaTempo = Get-Date -Format "yyyyMMdd-HHmmss"
 $DiretorioTemporario = $null
 $WorktreeTemporario = $null
@@ -155,6 +157,66 @@ function Invoke-VercelEnvPull([string]$Ambiente, [string]$Destino) {
     Invoke-Comando $npx.Source @("--yes", "vercel", "env", "pull", $Destino, "--environment=$Ambiente", "--yes")
 }
 
+function Get-VercelSaida([string[]]$Argumentos) {
+    $vercel = Get-Command "vercel" -ErrorAction SilentlyContinue
+    if ($vercel) {
+        return Get-SaidaComando $vercel.Source $Argumentos
+    }
+    $npx = Get-Command "npx" -ErrorAction SilentlyContinue
+    if (-not $npx) {
+        throw "Vercel CLI nao encontrado. Instale com 'npm install -g vercel'."
+    }
+    return Get-SaidaComando $npx.Source (@("--yes", "vercel") + $Argumentos)
+}
+
+function Invoke-VercelComando([string[]]$Argumentos) {
+    $vercel = Get-Command "vercel" -ErrorAction SilentlyContinue
+    if ($vercel) {
+        Invoke-Comando $vercel.Source $Argumentos
+        return
+    }
+    $npx = Get-Command "npx" -ErrorAction SilentlyContinue
+    if (-not $npx) {
+        throw "Vercel CLI nao encontrado. Instale com 'npm install -g vercel'."
+    }
+    Invoke-Comando $npx.Source (@("--yes", "vercel") + $Argumentos)
+}
+
+function Get-AuditoriaAmbiente([string]$Ambiente, [string]$RaizRepositorio) {
+    $scriptAuditoria = Join-Path $RaizRepositorio "scripts\auditar-ambiente-vercel.js"
+    $argumentos = @("env", "run", "--environment=$Ambiente")
+    if ($Ambiente -eq "preview") {
+        $argumentos += @("--git-branch", "homologacao")
+    }
+    $argumentos += @("--", "node", $scriptAuditoria)
+    $saida = Get-VercelSaida $argumentos
+    $linha = ($saida -split "`n" | Where-Object { $_ -like "JLL_ENV_AUDIT=*" } | Select-Object -Last 1)
+    if (-not $linha) {
+        throw "A Vercel nao retornou a auditoria protegida do ambiente $Ambiente."
+    }
+    return ($linha.Substring("JLL_ENV_AUDIT=".Length) | ConvertFrom-Json)
+}
+
+function Assert-AuditoriaObrigatoria($Auditoria, [string]$Ambiente) {
+    $faltantes = New-Object System.Collections.Generic.List[string]
+    foreach ($propriedade in $Auditoria.present.PSObject.Properties) {
+        if (-not [bool]$propriedade.Value) { $faltantes.Add($propriedade.Name) }
+    }
+    if ($faltantes.Count -gt 0) {
+        throw "Variaveis ausentes em ${Ambiente}: $($faltantes -join ', ')."
+    }
+}
+
+function Invoke-OperacaoBancoAmbiente([string]$Ambiente, [string]$Operacao, [string]$Arquivo, [string]$RaizRepositorio) {
+    $scriptBanco = Join-Path $RaizRepositorio "scripts\operar-banco-vercel.ps1"
+    $argumentos = @("env", "run", "--environment=$Ambiente")
+    if ($Ambiente -eq "preview") {
+        $argumentos += @("--git-branch", "homologacao")
+    }
+    $argumentos += @("--", "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $scriptBanco, "-Operacao", $Operacao, "-Arquivo", $Arquivo)
+    Invoke-VercelComando $argumentos
+}
+
 function Assert-VercelPronta([string]$RaizRepositorio) {
     $preferenciaAnterior = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
@@ -253,6 +315,16 @@ function Restore-Banco([string]$UrlBanco, [string]$ArquivoDump) {
     ) -OcultarSaida
 }
 
+function Read-SegredoTexto([string]$Mensagem) {
+    $seguro = Read-Host $Mensagem -AsSecureString
+    $ponteiro = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($seguro)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ponteiro)
+    } finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ponteiro)
+    }
+}
+
 try {
     Assert-ComandoExiste "git"
     Assert-ComandoExiste "npm"
@@ -292,6 +364,9 @@ try {
     $preview = $null
     $bancoCompartilhado = $false
     $blobCompartilhado = $false
+    $infraSensivelProtegida = $false
+    $bancoProducao = $null
+    $bancoPreview = $null
 
     if ($SemAuditoriaVercel) {
         if ($Executar) {
@@ -307,24 +382,31 @@ try {
         $arquivoPreview = Join-Path $DiretorioTemporario ".env.preview"
         Invoke-VercelEnvPull "production" $arquivoProducao
         Invoke-VercelEnvPull "preview" $arquivoPreview
-        $producao = Read-DotEnv $arquivoProducao
-        $preview = Read-DotEnv $arquivoPreview
+        $producaoValores = Read-DotEnv $arquivoProducao
+        $previewValores = Read-DotEnv $arquivoPreview
+        Assert-VariaveisObrigatorias $producaoValores "Production"
+        Assert-VariaveisObrigatorias $previewValores "Preview"
 
-        Assert-VariaveisObrigatorias $producao "Production"
-        Assert-VariaveisObrigatorias $preview "Preview"
-        Assert-UrlPublicaProducao $producao $preview
+        $producao = Get-AuditoriaAmbiente "production" $RaizRepositorio
+        $preview = Get-AuditoriaAmbiente "preview" $RaizRepositorio
+        Assert-UrlPublicaProducao @{ PUBLIC_SITE_URL = $producao.publicSiteUrl } @{ PUBLIC_SITE_URL = $preview.publicSiteUrl }
 
-        $bancoProducao = Get-ValorBanco $producao
-        $bancoPreview = Get-ValorBanco $preview
-        $bancoCompartilhado = (Get-IdentidadeBanco $bancoProducao) -eq (Get-IdentidadeBanco $bancoPreview)
-        $blobCompartilhado = $producao["BLOB_STORE_ID"] -eq $preview["BLOB_STORE_ID"]
+        $infraSensivelProtegida = -not $producao.databaseFingerprint -or -not $preview.databaseFingerprint
+        if ($infraSensivelProtegida) {
+            Write-Host "A Vercel protege os valores sensiveis. A simulacao validou nomes e escopos, mas nao baixou os segredos." -ForegroundColor Yellow
+            $bancoCompartilhado = $true
+        } else {
+            $bancoCompartilhado = $producao.databaseFingerprint -eq $preview.databaseFingerprint
+        }
+        $blobCompartilhado = $producao.blobFingerprint -eq $preview.blobFingerprint
 
         if ($bancoCompartilhado) {
             Write-Host "Production e Preview usam o mesmo banco Neon. Nao sera feita copia sobre o proprio banco." -ForegroundColor Yellow
-            foreach ($chave in @("SMTP_CONFIG_ENCRYPTION_KEY", "PAYMENT_CONFIG_ENCRYPTION_KEY")) {
-                if ($producao[$chave] -ne $preview[$chave]) {
-                    throw "$chave difere entre Production e Preview, mas o banco e compartilhado. Os valores precisam coincidir para ler configuracoes ja criptografadas."
-                }
+            if ($producao.smtpKeyFingerprint -and $preview.smtpKeyFingerprint -and $producao.smtpKeyFingerprint -ne $preview.smtpKeyFingerprint) {
+                throw "SMTP_CONFIG_ENCRYPTION_KEY difere entre Production e Preview, mas o banco e compartilhado. Os valores precisam coincidir."
+            }
+            if ($producao.paymentKeyFingerprint -and $preview.paymentKeyFingerprint -and $producao.paymentKeyFingerprint -ne $preview.paymentKeyFingerprint) {
+                throw "PAYMENT_CONFIG_ENCRYPTION_KEY difere entre Production e Preview, mas o banco e compartilhado. Os valores precisam coincidir."
             }
         } else {
             Write-Host "Production e Preview usam bancos diferentes." -ForegroundColor Yellow
@@ -354,16 +436,32 @@ try {
         throw "Confirmacao invalida. Use exatamente: $ConfirmacaoEsperada"
     }
 
+    if ($infraSensivelProtegida) {
+        if ($ConfirmacaoInfra -cne $ConfirmacaoInfraEsperada) {
+            throw "A Vercel protege as conexoes. Confirme a revisao manual com -ConfirmacaoInfra `"$ConfirmacaoInfraEsperada`"."
+        }
+        $bancoProducao = Read-SegredoTexto "Cole DATABASE_URL de Production (o valor nao sera exibido nem salvo)"
+        $bancoPreview = Read-SegredoTexto "Cole DATABASE_URL de Preview (o valor nao sera exibido nem salvo)"
+        $bancoCompartilhado = (Get-IdentidadeBanco $bancoProducao) -eq (Get-IdentidadeBanco $bancoPreview)
+        if (-not $bancoCompartilhado) {
+            if (-not $SubstituirBancoProducao -or $ConfirmacaoBanco -cne $ConfirmacaoBancoEsperada) {
+                throw "Os bancos sao diferentes. Use a confirmacao especifica para autorizar a substituicao de Production."
+            }
+        }
+    }
+
     Write-Etapa "Criando backup do banco antes da promocao"
     [void](New-Item -ItemType Directory -Path $DiretorioBackup -Force)
     $backupProducao = Join-Path $DiretorioBackup "producao-antes-da-promocao.dump"
-    New-BackupBanco (Get-ValorBanco $producao) $backupProducao
+    if (-not $bancoProducao) { $bancoProducao = Get-ValorBanco $producaoValores }
+    New-BackupBanco $bancoProducao $backupProducao
     Write-Host "Backup criado em $backupProducao" -ForegroundColor Green
 
     $dumpHomologacao = $null
     if (-not $bancoCompartilhado) {
         $dumpHomologacao = Join-Path $DiretorioBackup "homologacao-para-producao.dump"
-        New-BackupBanco (Get-ValorBanco $preview) $dumpHomologacao
+        if (-not $bancoPreview) { $bancoPreview = Get-ValorBanco $previewValores }
+        New-BackupBanco $bancoPreview $dumpHomologacao
     }
 
     Write-Etapa "Preparando a main com o conteudo exato da homologacao"
@@ -389,7 +487,7 @@ try {
 
     if (-not $bancoCompartilhado) {
         Write-Etapa "Substituindo o banco de Production pelo banco de homologacao"
-        Restore-Banco (Get-ValorBanco $producao) $dumpHomologacao
+        Restore-Banco $bancoProducao $dumpHomologacao
         Write-Host "Banco restaurado em UTF-8. O backup anterior foi preservado." -ForegroundColor Green
     }
 

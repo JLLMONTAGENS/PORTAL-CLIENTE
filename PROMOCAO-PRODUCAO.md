@@ -7,7 +7,7 @@ Este processo faz a `main` terminar com o mesmo conteúdo da branch `homologacao
 Na Vercel, confira estes pontos:
 
 1. `FIREBASE_SERVICE_ACCOUNT_JSON` deve existir também em **Production**. Pela tela atual, ela aparenta estar apenas em Preview e marcada como “Needs Attention”.
-2. `PUBLIC_SITE_URL` deve existir em **Production** e conter a URL pública oficial, com `https://`. Não use a URL da homologação.
+2. `PUBLIC_SITE_URL` deve existir em **Production** e conter a URL pública oficial, com `https://`. Não use `https://portal-cliente-git-homologacao-jean-melo.vercel.app`, pois esse é o endereço da homologação.
 3. `SMTP_CONFIG_ENCRYPTION_KEY` e `PAYMENT_CONFIG_ENCRYPTION_KEY` precisam ter o mesmo valor em Production e Preview quando o banco for compartilhado. Essas chaves abrem configurações já criptografadas no banco.
 4. `ADMIN_SESSION_SECRET` e `MONTADOR_SESSION_SECRET` podem ser específicos por ambiente. Ao trocar essas chaves, sessões existentes deixam de valer e os usuários precisam entrar novamente.
 5. `PAYMENT_WEBHOOK_SECRET` deve coincidir com o segredo configurado no provedor de pagamentos para o endereço de produção.
@@ -46,6 +46,12 @@ Somente depois de a simulação terminar sem erros:
 
 ```powershell
 .\scripts\promover-producao.ps1 -Executar -Confirmacao "PROMOVER HOMOLOGACAO PARA PRODUCAO"
+```
+
+Variáveis marcadas como sensíveis pela Vercel não podem ser baixadas nem mesmo pela CLI autenticada. Nesse caso, a execução também exige a confirmação abaixo e solicita as duas `DATABASE_URL` de forma oculta, sem mostrá-las ou salvá-las:
+
+```powershell
+.\scripts\promover-producao.ps1 -Executar -Confirmacao "PROMOVER HOMOLOGACAO PARA PRODUCAO" -ConfirmacaoInfra "CONFIRMO INFRAESTRUTURA SENSIVEL"
 ```
 
 O comando:
