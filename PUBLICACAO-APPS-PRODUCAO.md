@@ -11,9 +11,15 @@ Não altere os IDs Android depois da primeira publicação. A Play Store e o Fir
 ## 1. Firebase de produção
 
 1. Crie um projeto Firebase exclusivo para produção.
-2. Cadastre dois aplicativos Android usando exatamente os IDs acima.
-3. Baixe o `google-services.json` de cada aplicativo.
-4. Coloque os arquivos nos locais abaixo, sem trocar um pelo outro:
+2. Na raiz do projeto, execute o cadastro automatizado dos dois aplicativos:
+
+   ```powershell
+   .\scripts\configurar-firebase-producao.ps1 -Login
+   ```
+
+   O script usa o projeto `jllmontagens-producao`, cadastra os pacotes sem duplicá-los, baixa os dois arquivos e valida o projeto e o pacote antes de instalá-los. Se a conta já estiver autenticada, nas próximas execuções o parâmetro `-Login` pode ser omitido.
+
+3. Confira os arquivos instalados automaticamente:
    - `atendimento-app/android/app/google-services.json`
    - `montador-app/android/app/google-services.json`
 5. Em **Configurações do projeto > Contas de serviço**, gere uma chave privada para o servidor.
