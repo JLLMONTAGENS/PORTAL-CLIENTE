@@ -372,7 +372,11 @@ try {
     if (-not $Executar) {
         Write-Host "`nSIMULACAO CONCLUIDA. Nenhuma alteracao foi feita em Production ou na main." -ForegroundColor Green
         Write-Host "Para executar apos corrigir todos os avisos:" -ForegroundColor White
-        Write-Host ".\scripts\promover-producao.ps1 -Executar -Confirmacao `"$ConfirmacaoEsperada`"" -ForegroundColor White
+        if ($infraSensivelProtegida) {
+            Write-Host ".\scripts\promover-producao.ps1 -Executar -Confirmacao `"$ConfirmacaoEsperada`" -ConfirmacaoInfra `"$ConfirmacaoInfraEsperada`"" -ForegroundColor White
+        } else {
+            Write-Host ".\scripts\promover-producao.ps1 -Executar -Confirmacao `"$ConfirmacaoEsperada`"" -ForegroundColor White
+        }
         exit 0
     }
 
