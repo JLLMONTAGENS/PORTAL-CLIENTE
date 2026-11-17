@@ -32,14 +32,21 @@ function Invoke-Comando {
         [switch]$OcultarSaida
     )
 
-    if ($OcultarSaida) {
-        & $Comando @Argumentos *> $null
-    } else {
-        & $Comando @Argumentos
+    $preferenciaAnterior = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        if ($OcultarSaida) {
+            & $Comando @Argumentos *> $null
+        } else {
+            & $Comando @Argumentos
+        }
+        $codigoSaida = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $preferenciaAnterior
     }
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "O comando '$Comando' falhou com o codigo $LASTEXITCODE."
+    if ($codigoSaida -ne 0) {
+        throw "O comando '$Comando' falhou com o codigo $codigoSaida."
     }
 }
 
@@ -49,8 +56,15 @@ function Get-SaidaComando {
         [Parameter(Mandatory = $true)][string[]]$Argumentos
     )
 
-    $saida = & $Comando @Argumentos 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $preferenciaAnterior = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $saida = & $Comando @Argumentos 2>&1
+        $codigoSaida = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $preferenciaAnterior
+    }
+    if ($codigoSaida -ne 0) {
         throw "O comando '$Comando' falhou: $($saida -join [Environment]::NewLine)"
     }
     return ($saida -join "`n").Trim()
@@ -142,17 +156,23 @@ function Invoke-VercelEnvPull([string]$Ambiente, [string]$Destino) {
 }
 
 function Assert-VercelPronta([string]$RaizRepositorio) {
+    $preferenciaAnterior = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     $vercel = Get-Command "vercel" -ErrorAction SilentlyContinue
-    if ($vercel) {
-        $saidaIdentidade = & $vercel.Source "whoami" 2>&1
-    } else {
-        $npx = Get-Command "npx" -ErrorAction SilentlyContinue
-        if (-not $npx) {
-            throw "Vercel CLI nao encontrado. Instale com 'npm install -g vercel'."
+    try {
+        if ($vercel) {
+            $saidaIdentidade = & $vercel.Source "whoami" 2>&1
+        } else {
+            $npx = Get-Command "npx" -ErrorAction SilentlyContinue
+            if (-not $npx) {
+                throw "Vercel CLI nao encontrado. Instale com 'npm install -g vercel'."
+            }
+            $saidaIdentidade = & $npx.Source "--yes" "vercel" "whoami" 2>&1
         }
-        $saidaIdentidade = & $npx.Source "--yes" "vercel" "whoami" 2>&1
+        $codigoIdentidade = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $preferenciaAnterior
     }
-    $codigoIdentidade = $LASTEXITCODE
     $identidade = ($saidaIdentidade -join "`n").Trim()
 
     if ($identidade -match "Logged out") {
