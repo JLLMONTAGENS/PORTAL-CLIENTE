@@ -157,66 +157,6 @@ function Invoke-VercelEnvPull([string]$Ambiente, [string]$Destino) {
     Invoke-Comando $npx.Source @("--yes", "vercel", "env", "pull", $Destino, "--environment=$Ambiente", "--yes")
 }
 
-function Get-VercelSaida([string[]]$Argumentos) {
-    $vercel = Get-Command "vercel" -ErrorAction SilentlyContinue
-    if ($vercel) {
-        return Get-SaidaComando $vercel.Source $Argumentos
-    }
-    $npx = Get-Command "npx" -ErrorAction SilentlyContinue
-    if (-not $npx) {
-        throw "Vercel CLI nao encontrado. Instale com 'npm install -g vercel'."
-    }
-    return Get-SaidaComando $npx.Source (@("--yes", "vercel") + $Argumentos)
-}
-
-function Invoke-VercelComando([string[]]$Argumentos) {
-    $vercel = Get-Command "vercel" -ErrorAction SilentlyContinue
-    if ($vercel) {
-        Invoke-Comando $vercel.Source $Argumentos
-        return
-    }
-    $npx = Get-Command "npx" -ErrorAction SilentlyContinue
-    if (-not $npx) {
-        throw "Vercel CLI nao encontrado. Instale com 'npm install -g vercel'."
-    }
-    Invoke-Comando $npx.Source (@("--yes", "vercel") + $Argumentos)
-}
-
-function Get-AuditoriaAmbiente([string]$Ambiente, [string]$RaizRepositorio) {
-    $scriptAuditoria = Join-Path $RaizRepositorio "scripts\auditar-ambiente-vercel.js"
-    $argumentos = @("env", "run", "--environment=$Ambiente")
-    if ($Ambiente -eq "preview") {
-        $argumentos += @("--git-branch", "homologacao")
-    }
-    $argumentos += @("--", "node", $scriptAuditoria)
-    $saida = Get-VercelSaida $argumentos
-    $linha = ($saida -split "`n" | Where-Object { $_ -like "JLL_ENV_AUDIT=*" } | Select-Object -Last 1)
-    if (-not $linha) {
-        throw "A Vercel nao retornou a auditoria protegida do ambiente $Ambiente."
-    }
-    return ($linha.Substring("JLL_ENV_AUDIT=".Length) | ConvertFrom-Json)
-}
-
-function Assert-AuditoriaObrigatoria($Auditoria, [string]$Ambiente) {
-    $faltantes = New-Object System.Collections.Generic.List[string]
-    foreach ($propriedade in $Auditoria.present.PSObject.Properties) {
-        if (-not [bool]$propriedade.Value) { $faltantes.Add($propriedade.Name) }
-    }
-    if ($faltantes.Count -gt 0) {
-        throw "Variaveis ausentes em ${Ambiente}: $($faltantes -join ', ')."
-    }
-}
-
-function Invoke-OperacaoBancoAmbiente([string]$Ambiente, [string]$Operacao, [string]$Arquivo, [string]$RaizRepositorio) {
-    $scriptBanco = Join-Path $RaizRepositorio "scripts\operar-banco-vercel.ps1"
-    $argumentos = @("env", "run", "--environment=$Ambiente")
-    if ($Ambiente -eq "preview") {
-        $argumentos += @("--git-branch", "homologacao")
-    }
-    $argumentos += @("--", "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $scriptBanco, "-Operacao", $Operacao, "-Arquivo", $Arquivo)
-    Invoke-VercelComando $argumentos
-}
-
 function Assert-VercelPronta([string]$RaizRepositorio) {
     $preferenciaAnterior = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
@@ -387,27 +327,29 @@ try {
         Assert-VariaveisObrigatorias $producaoValores "Production"
         Assert-VariaveisObrigatorias $previewValores "Preview"
 
-        $producao = Get-AuditoriaAmbiente "production" $RaizRepositorio
-        $preview = Get-AuditoriaAmbiente "preview" $RaizRepositorio
-        Assert-UrlPublicaProducao @{ PUBLIC_SITE_URL = $producao.publicSiteUrl } @{ PUBLIC_SITE_URL = $preview.publicSiteUrl }
+        $producao = $producaoValores
+        $preview = $previewValores
+        Assert-UrlPublicaProducao $producao $preview
 
-        $infraSensivelProtegida = -not $producao.databaseFingerprint -or -not $preview.databaseFingerprint
+        $urlBancoProducaoAuditada = Get-ValorBanco $producao
+        $urlBancoPreviewAuditada = Get-ValorBanco $preview
+        $infraSensivelProtegida = $urlBancoProducaoAuditada -eq "[SENSITIVE]" -or $urlBancoPreviewAuditada -eq "[SENSITIVE]"
         if ($infraSensivelProtegida) {
             Write-Host "A Vercel protege os valores sensiveis. A simulacao validou nomes e escopos, mas nao baixou os segredos." -ForegroundColor Yellow
             $bancoCompartilhado = $true
         } else {
-            $bancoCompartilhado = $producao.databaseFingerprint -eq $preview.databaseFingerprint
+            $bancoCompartilhado = (Get-IdentidadeBanco $urlBancoProducaoAuditada) -eq (Get-IdentidadeBanco $urlBancoPreviewAuditada)
         }
-        $blobCompartilhado = $producao.blobFingerprint -eq $preview.blobFingerprint
+        $blobCompartilhado = $producao["BLOB_STORE_ID"] -eq $preview["BLOB_STORE_ID"] -and $producao["BLOB_STORE_ID"] -ne "[SENSITIVE]"
 
         if ($infraSensivelProtegida) {
             Write-Host "A identidade do banco Neon sera confirmada durante a execucao real, comparando as duas DATABASE_URL sem exibi-las." -ForegroundColor Yellow
         } elseif ($bancoCompartilhado) {
             Write-Host "Production e Preview usam o mesmo banco Neon. Nao sera feita copia sobre o proprio banco." -ForegroundColor Yellow
-            if ($producao.smtpKeyFingerprint -and $preview.smtpKeyFingerprint -and $producao.smtpKeyFingerprint -ne $preview.smtpKeyFingerprint) {
+            if ($producao["SMTP_CONFIG_ENCRYPTION_KEY"] -ne "[SENSITIVE]" -and $producao["SMTP_CONFIG_ENCRYPTION_KEY"] -ne $preview["SMTP_CONFIG_ENCRYPTION_KEY"]) {
                 throw "SMTP_CONFIG_ENCRYPTION_KEY difere entre Production e Preview, mas o banco e compartilhado. Os valores precisam coincidir."
             }
-            if ($producao.paymentKeyFingerprint -and $preview.paymentKeyFingerprint -and $producao.paymentKeyFingerprint -ne $preview.paymentKeyFingerprint) {
+            if ($producao["PAYMENT_CONFIG_ENCRYPTION_KEY"] -ne "[SENSITIVE]" -and $producao["PAYMENT_CONFIG_ENCRYPTION_KEY"] -ne $preview["PAYMENT_CONFIG_ENCRYPTION_KEY"]) {
                 throw "PAYMENT_CONFIG_ENCRYPTION_KEY difere entre Production e Preview, mas o banco e compartilhado. Os valores precisam coincidir."
             }
         } else {
