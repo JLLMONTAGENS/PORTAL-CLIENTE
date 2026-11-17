@@ -7,9 +7,10 @@ if (-not (Test-Path -LiteralPath $googleServices)) { throw 'Adicione o google-se
 if (-not (Test-Path -LiteralPath $keyProperties)) { throw 'Configure android\key.properties com a chave de upload da Play Store.' }
 $firebase = Get-Content -LiteralPath $googleServices -Raw | ConvertFrom-Json
 $projectId = [string]$firebase.project_info.project_id
-$package = [string]$firebase.client[0].client_info.android_client_info.package_name
+$expectedPackage = 'br.com.jllmontagens.jll_montador'
+$packages = @($firebase.client | ForEach-Object { [string]$_.client_info.android_client_info.package_name })
 if ($projectId -match 'homolog') { throw "O google-services.json ainda aponta para homologacao ($projectId)." }
-if ($package -ne 'br.com.jllmontagens.jll_montador') { throw "Pacote Firebase incorreto: $package" }
+if ($expectedPackage -notin $packages) { throw "Pacote Firebase esperado nao encontrado: $expectedPackage. Encontrados: $($packages -join ', ')" }
 
 $health = Invoke-RestMethod -Uri "$($ApiBase.TrimEnd('/'))/api/health" -Method Get
 if (-not $health) { throw 'A API de producao nao respondeu corretamente.' }
