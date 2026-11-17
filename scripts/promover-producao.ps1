@@ -400,7 +400,9 @@ try {
         }
         $blobCompartilhado = $producao.blobFingerprint -eq $preview.blobFingerprint
 
-        if ($bancoCompartilhado) {
+        if ($infraSensivelProtegida) {
+            Write-Host "A identidade do banco Neon sera confirmada durante a execucao real, comparando as duas DATABASE_URL sem exibi-las." -ForegroundColor Yellow
+        } elseif ($bancoCompartilhado) {
             Write-Host "Production e Preview usam o mesmo banco Neon. Nao sera feita copia sobre o proprio banco." -ForegroundColor Yellow
             if ($producao.smtpKeyFingerprint -and $preview.smtpKeyFingerprint -and $producao.smtpKeyFingerprint -ne $preview.smtpKeyFingerprint) {
                 throw "SMTP_CONFIG_ENCRYPTION_KEY difere entre Production e Preview, mas o banco e compartilhado. Os valores precisam coincidir."
