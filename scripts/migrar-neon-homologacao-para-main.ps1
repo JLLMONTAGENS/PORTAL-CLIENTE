@@ -1,8 +1,10 @@
 [CmdletBinding()]
 param(
     [switch]$Executar,
-    [switch]$SomenteEstrutura,
-    [string]$Confirmacao = ""
+    [string]$Confirmacao = "",
+    [string]$AdminLogin = "jean.melo",
+    [string]$AdminEmail = "jjmelo-g@hotmail.com",
+    [string]$AdminNome = "Jean Melo"
 )
 
 $ErrorActionPreference = "Stop"
@@ -33,6 +35,31 @@ function Read-SegredoTexto([string]$Mensagem) {
         return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ponteiro).Trim().Trim('"').Trim("'")
     } finally {
         [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ponteiro)
+    }
+}
+
+function New-SenhaHash([string]$Senha) {
+    if ($Senha.Length -lt 6) {
+        throw "A senha provisoria do administrador deve ter pelo menos 6 caracteres."
+    }
+
+    $codigo = @'
+const crypto = require('crypto');
+const password = process.env.JLL_ADMIN_PASSWORD_TEMP;
+if (!password) process.exit(2);
+const salt = crypto.randomBytes(16).toString('hex');
+process.stdout.write('scrypt$' + salt + '$' + crypto.scryptSync(password, salt, 64).toString('hex'));
+'@
+    $env:JLL_ADMIN_PASSWORD_TEMP = $Senha
+    try {
+        $saida = Invoke-Nativo "node" @("-e", $codigo) -OcultarSaida
+        $hash = ([string]($saida -join "")).Trim()
+        if ($hash -notmatch '^scrypt\$[0-9a-f]{32}\$[0-9a-f]{128}$') {
+            throw "Nao foi possivel gerar o hash seguro da senha do administrador."
+        }
+        return $hash
+    } finally {
+        Remove-Item Env:JLL_ADMIN_PASSWORD_TEMP -ErrorAction SilentlyContinue
     }
 }
 
@@ -109,9 +136,7 @@ SELECT n.nspname || '.' || c.relname
 FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind IN ('r', 'p')
-  AND n.nspname NOT IN ('pg_catalog', 'information_schema')
-  AND n.nspname NOT LIKE 'neon_%'
-  AND n.nspname NOT LIKE 'pg_toast%'
+  AND n.nspname = 'public'
 ORDER BY 1;
 "@
     $saida = Invoke-Nativo "psql" @("-X", "-v", "ON_ERROR_STOP=1", "-At", "-c", $sql) -OcultarSaida
@@ -129,6 +154,7 @@ try {
     Assert-Comando "pg_dump"
     Assert-Comando "pg_restore"
     Assert-Comando "psql"
+    Assert-Comando "node"
 
     Write-Host "Use as connection strings DIRECT obtidas em Neon > Branch > Connect." -ForegroundColor Yellow
     Write-Host "Nao use DATABASE_URL compartilhada da Vercel e nao use hosts com '-pooler'." -ForegroundColor Yellow
@@ -161,9 +187,14 @@ try {
         throw "Confirmacao invalida. Use exatamente: $ConfirmacaoEsperada"
     }
 
+    $senhaAdmin = Read-SegredoTexto "Digite a senha provisoria do administrador $AdminLogin"
+    $senhaAdminHash = New-SenhaHash $senhaAdmin
+    $senhaAdmin = $null
+
     [void](New-Item -ItemType Directory -Path $DiretorioBackup -Force)
     $backupMain = Join-Path $DiretorioBackup "main-antes-da-migracao.dump"
     $dumpHomologacao = Join-Path $DiretorioBackup "homologacao-fonte.dump"
+    $listaRestauracao = Join-Path $DiretorioBackup "homologacao-restauracao.list"
 
     Write-Etapa "Criando backup completo da branch main"
     Set-Conexao $main
@@ -172,13 +203,49 @@ try {
 
     Write-Etapa "Gerando dump da branch homologacao"
     Set-Conexao $homologacao
-    $argumentosDump = @("--format=custom", "--encoding=UTF8", "--no-owner", "--no-privileges", "--schema=public", "--file=$dumpHomologacao")
-    if ($SomenteEstrutura) { $argumentosDump += "--schema-only" }
+    $argumentosDump = @("--format=custom", "--encoding=UTF8", "--no-owner", "--no-privileges", "--schema=public", "--schema-only", "--file=$dumpHomologacao")
     Invoke-Nativo "pg_dump" $argumentosDump -OcultarSaida
+
+    # O schema public pode ter extensoes gerenciadas pela Neon (por exemplo,
+    # pgcrypto). Preservamos o schema e restauramos somente os objetos contidos
+    # nele para que --clean nao tente executar DROP SCHEMA public.
+    $linhasLista = @(Invoke-Nativo "pg_restore" @("--list", $dumpHomologacao) -OcultarSaida)
+    $linhasListaFiltradas = @($linhasLista | ForEach-Object {
+        $linha = [string]$_
+        if ($linha -match '^\d+;\s+\d+\s+\d+\s+SCHEMA\s+-\s+public\s+' -or
+            $linha -match '^\d+;\s+\d+\s+\d+\s+COMMENT\s+-\s+SCHEMA\s+public\s+') {
+            "; preservado pela migracao: $linha"
+        } else {
+            $linha
+        }
+    })
+    [IO.File]::WriteAllLines($listaRestauracao, $linhasListaFiltradas, (New-Object Text.UTF8Encoding($false)))
 
     Write-Etapa "Restaurando homologacao sobre a branch main"
     Set-Conexao $main
-    Invoke-Nativo "pg_restore" @("--dbname=$($main.Database)", "--clean", "--if-exists", "--no-owner", "--no-privileges", "--exit-on-error", "--single-transaction", $dumpHomologacao) -OcultarSaida
+    Invoke-Nativo "pg_restore" @("--dbname=$($main.Database)", "--use-list=$listaRestauracao", "--clean", "--if-exists", "--no-owner", "--no-privileges", "--exit-on-error", "--single-transaction", $dumpHomologacao) -OcultarSaida
+
+    Write-Etapa "Criando o unico usuario administrador inicial"
+    $nomeSql = $AdminNome.Replace("'", "''")
+    $loginSql = $AdminLogin.Replace("'", "''")
+    $emailSql = $AdminEmail.Replace("'", "''")
+    $hashSql = $senhaAdminHash.Replace("'", "''")
+    $sqlAdmin = @"
+INSERT INTO public.usuarios_atendimento
+  (nome, nome_exibicao, nome_completo, login, email, senha_hash, perfil, ativo)
+VALUES
+  ('$nomeSql', '$nomeSql', '$nomeSql', '$loginSql', '$emailSql', '$hashSql', 'ADMINISTRADOR', TRUE)
+ON CONFLICT (email) DO UPDATE SET
+  nome = EXCLUDED.nome,
+  nome_exibicao = EXCLUDED.nome_exibicao,
+  nome_completo = EXCLUDED.nome_completo,
+  login = EXCLUDED.login,
+  senha_hash = EXCLUDED.senha_hash,
+  perfil = 'ADMINISTRADOR',
+  ativo = TRUE;
+"@
+    Invoke-Nativo "psql" @("-X", "-v", "ON_ERROR_STOP=1", "-c", $sqlAdmin) -OcultarSaida
+    $senhaAdminHash = $null
 
     Write-Etapa "Validando as tabelas restauradas"
     $tabelasDestinoDepois = Get-Tabelas $main
@@ -186,9 +253,18 @@ try {
     if ($faltantes.Count -gt 0) {
         throw "A restauracao terminou, mas estas tabelas nao foram localizadas na main: $($faltantes -join ', ')"
     }
+    $extras = @($tabelasDestinoDepois | Where-Object { $_ -notin $tabelasOrigem })
+    if ($extras.Count -gt 0) {
+        throw "A main ainda contem tabelas public que nao existem na homologacao: $($extras -join ', ')"
+    }
+    $quantidadeAdmin = Invoke-Nativo "psql" @("-X", "-v", "ON_ERROR_STOP=1", "-At", "-c", "SELECT COUNT(*) FROM public.usuarios_atendimento WHERE login = '$loginSql' AND email = '$emailSql' AND perfil = 'ADMINISTRADOR' AND ativo = TRUE;") -OcultarSaida
+    if (([string]($quantidadeAdmin -join "")).Trim() -ne "1") {
+        throw "As tabelas foram restauradas, mas o usuario administrador inicial nao foi confirmado."
+    }
 
     Write-Host "`nMIGRACAO NEON CONCLUIDA." -ForegroundColor Green
-    Write-Host "Main agora contem todas as $($tabelasOrigem.Count) tabela(s) encontradas na homologacao."
+    Write-Host "Main agora contem a estrutura das $($tabelasOrigem.Count) tabela(s) da homologacao, sem os dados de teste."
+    Write-Host "Administrador inicial ativo: $AdminLogin ($AdminEmail)."
     Write-Host "Backup anterior da main: $backupMain"
     Write-Host "Dump usado na migracao: $dumpHomologacao"
 } finally {
