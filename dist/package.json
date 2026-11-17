@@ -1,0 +1,12 @@
+{
+  "name": "jll-montagens-web",
+  "private": true,
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.1",
+    "@vercel/blob": "^2.3.0",
+    "nodemailer": "^10.3.1"
+  },
+  "overrides": {
+    "zod": "^4.6.6"
+  }
+}

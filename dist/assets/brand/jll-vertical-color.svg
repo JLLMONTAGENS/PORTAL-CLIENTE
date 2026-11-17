@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE svg
+  PUBLIC '-//W3C//DTD SVG 1.0//EN'
+  'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'>
+<svg width="620" height="700" preserveAspectRatio="xMinYMin meet" viewBox="0 0 620 700" xmlns="http://www.w3.org/2000/svg" version="1.0" fill-rule="evenodd" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<title>...</title>
+	<desc>...</desc>
+	<clipPath id="clip">
+		<rect x="0" y="0" width="620" height="700"/>
+	</clipPath>
+	<g id="group" transform="scale(1,-1) translate(0,-700)" style="clip-path: url(#clip)">
+		<g transform="">
+			<path d="M 189.6875 565.625 L 248.75 565.625 L 248.75 425.625 C 248.75 378.59375 227.96875 353.4375 197.34375 353.4375 C 178.75 353.4375 168.90625 367.65625 167.8125 390.625 L 207.1875 403.75 C 208.28125 388.4375 214.84375 381.875 223.59375 381.875 C 234.53125 381.875 238.90625 395 238.90625 415.78125 L 238.90625 530.625 L 189.6875 530.625 Z " style="stroke: none; stroke-linecap: butt; stroke-width: 1; fill: rgb(10%,16%,29%); fill-rule: evenodd;"/>
+			<path d="M 261.875 565.625 L 305.625 565.625 L 305.625 410.3125 L 361.40625 410.3125 L 361.40625 370.9375 L 261.875 370.9375 Z " style="stroke: none; stroke-linecap: butt; stroke-width: 1; fill: rgb(10%,16%,29%); fill-rule: evenodd;"/>
+			<path d="M 323.125 565.625 L 366.875 565.625 L 366.875 447.5 L 423.75 447.5 L 423.75 408.125 L 323.125 408.125 Z " style="stroke: none; stroke-linecap: butt; stroke-width: 1; fill: rgb(90%,49%,13%); fill-rule: evenodd;"/>
+			<path d="M 260.78125 366.5625 L 310 335.9375 L 360.3125 366.5625 L 335.15625 382.96875 L 310 366.5625 L 284.84375 382.96875 Z " style="stroke: none; stroke-linecap: butt; stroke-width: 1; fill: rgb(10%,16%,29%); fill-rule: evenodd;"/>
+			<text x="130.32399999999998" y="245" style="font-family: Helvetica-Bold; font-size: 42px;fill: rgb(10%,16%,29%); stroke:none;" transform="translate(0,490) scale(1,-1)">JLL MONTAGENS</text>
+			<text x="151.48399999999998" y="195" style="font-family: Helvetica; font-size: 23px;fill: rgb(10%,16%,29%); stroke:none;" transform="translate(0,390) scale(1,-1)">Sua mobília, nossa montagem.</text>
+		</g>
+	</g>
+</svg>

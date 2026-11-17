@@ -1,0 +1,16 @@
+{
+  "name": "JLL Montagens — Atendimento",
+  "short_name": "JLL Atendimento",
+  "description": "Aplicativo de atendimento da equipe JLL Montagens.",
+  "id": "/admin/?app=1",
+  "start_url": "/admin/?app=1",
+  "scope": "/admin/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F2F4F7",
+  "theme_color": "#1A2B4C",
+  "icons": [
+    {"src":"/assets/brand/jll-favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"},
+    {"src":"/assets/brand/jll-favicon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
