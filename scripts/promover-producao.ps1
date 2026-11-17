@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [switch]$Executar,
+    [switch]$SomenteCodigo,
     [switch]$SubstituirBancoProducao,
     [switch]$SemAuditoriaVercel,
     [string]$Confirmacao = "",
@@ -269,6 +270,10 @@ try {
     Assert-ComandoExiste "git"
     Assert-ComandoExiste "npm"
 
+    if ($SomenteCodigo -and $SubstituirBancoProducao) {
+        throw "Use apenas um modo: -SomenteCodigo ou -SubstituirBancoProducao."
+    }
+
     $RaizRepositorio = Get-SaidaComando "git" @("rev-parse", "--show-toplevel")
     Set-Location -LiteralPath $RaizRepositorio
 
@@ -342,7 +347,9 @@ try {
         }
         $blobCompartilhado = $producao["BLOB_STORE_ID"] -eq $preview["BLOB_STORE_ID"] -and $producao["BLOB_STORE_ID"] -ne "[SENSITIVE]"
 
-        if ($infraSensivelProtegida) {
+        if ($SomenteCodigo) {
+            Write-Host "Modo somente codigo: nenhum banco sera lido, copiado ou restaurado." -ForegroundColor Yellow
+        } elseif ($infraSensivelProtegida) {
             Write-Host "A identidade do banco Neon sera confirmada durante a execucao real, comparando as duas DATABASE_URL sem exibi-las." -ForegroundColor Yellow
         } elseif ($bancoCompartilhado) {
             Write-Host "Production e Preview usam o mesmo banco Neon. Nao sera feita copia sobre o proprio banco." -ForegroundColor Yellow
@@ -362,7 +369,9 @@ try {
             }
         }
 
-        if ($blobCompartilhado) {
+        if ($SomenteCodigo) {
+            Write-Host "Modo somente codigo: o Blob Store existente sera preservado sem copia." -ForegroundColor Yellow
+        } elseif ($blobCompartilhado) {
             Write-Host "Production e Preview usam o mesmo Blob Store. Nenhuma copia de arquivos e necessaria." -ForegroundColor Yellow
         } else {
             throw "Os Blob Stores sao diferentes. A promocao automatica foi bloqueada para evitar perder anexos."
@@ -372,7 +381,9 @@ try {
     if (-not $Executar) {
         Write-Host "`nSIMULACAO CONCLUIDA. Nenhuma alteracao foi feita em Production ou na main." -ForegroundColor Green
         Write-Host "Para executar apos corrigir todos os avisos:" -ForegroundColor White
-        if ($infraSensivelProtegida) {
+        if ($SomenteCodigo) {
+            Write-Host ".\scripts\promover-producao.ps1 -SomenteCodigo -Executar -Confirmacao `"$ConfirmacaoEsperada`"" -ForegroundColor White
+        } elseif ($infraSensivelProtegida) {
             Write-Host ".\scripts\promover-producao.ps1 -Executar -Confirmacao `"$ConfirmacaoEsperada`" -ConfirmacaoInfra `"$ConfirmacaoInfraEsperada`"" -ForegroundColor White
         } else {
             Write-Host ".\scripts\promover-producao.ps1 -Executar -Confirmacao `"$ConfirmacaoEsperada`"" -ForegroundColor White
@@ -384,7 +395,7 @@ try {
         throw "Confirmacao invalida. Use exatamente: $ConfirmacaoEsperada"
     }
 
-    if ($infraSensivelProtegida) {
+    if ($infraSensivelProtegida -and -not $SomenteCodigo) {
         if ($ConfirmacaoInfra -cne $ConfirmacaoInfraEsperada) {
             throw "A Vercel protege as conexoes. Confirme a revisao manual com -ConfirmacaoInfra `"$ConfirmacaoInfraEsperada`"."
         }
@@ -398,18 +409,23 @@ try {
         }
     }
 
-    Write-Etapa "Criando backup do banco antes da promocao"
-    [void](New-Item -ItemType Directory -Path $DiretorioBackup -Force)
-    $backupProducao = Join-Path $DiretorioBackup "producao-antes-da-promocao.dump"
-    if (-not $bancoProducao) { $bancoProducao = Get-ValorBanco $producaoValores }
-    New-BackupBanco $bancoProducao $backupProducao
-    Write-Host "Backup criado em $backupProducao" -ForegroundColor Green
-
+    $backupProducao = $null
     $dumpHomologacao = $null
-    if (-not $bancoCompartilhado) {
-        $dumpHomologacao = Join-Path $DiretorioBackup "homologacao-para-producao.dump"
-        if (-not $bancoPreview) { $bancoPreview = Get-ValorBanco $previewValores }
-        New-BackupBanco $bancoPreview $dumpHomologacao
+    if ($SomenteCodigo) {
+        Write-Etapa "Preservando o banco de Production sem qualquer alteracao"
+    } else {
+        Write-Etapa "Criando backup do banco antes da promocao"
+        [void](New-Item -ItemType Directory -Path $DiretorioBackup -Force)
+        $backupProducao = Join-Path $DiretorioBackup "producao-antes-da-promocao.dump"
+        if (-not $bancoProducao) { $bancoProducao = Get-ValorBanco $producaoValores }
+        New-BackupBanco $bancoProducao $backupProducao
+        Write-Host "Backup criado em $backupProducao" -ForegroundColor Green
+
+        if (-not $bancoCompartilhado) {
+            $dumpHomologacao = Join-Path $DiretorioBackup "homologacao-para-producao.dump"
+            if (-not $bancoPreview) { $bancoPreview = Get-ValorBanco $previewValores }
+            New-BackupBanco $bancoPreview $dumpHomologacao
+        }
     }
 
     Write-Etapa "Preparando a main com o conteudo exato da homologacao"
@@ -433,7 +449,7 @@ try {
     Invoke-Comando "git" @("tag", "-a", $tagBackup, $remotaMain, "-m", "Backup automatico antes da promocao $MarcaTempo") -OcultarSaida
     Invoke-Comando "git" @("push", "origin", "refs/tags/$tagBackup") -OcultarSaida
 
-    if (-not $bancoCompartilhado) {
+    if (-not $SomenteCodigo -and -not $bancoCompartilhado) {
         Write-Etapa "Substituindo o banco de Production pelo banco de homologacao"
         Restore-Banco $bancoProducao $dumpHomologacao
         Write-Host "Banco restaurado em UTF-8. O backup anterior foi preservado." -ForegroundColor Green
@@ -454,7 +470,11 @@ try {
     Write-Host "`nPROMOCAO CONCLUIDA." -ForegroundColor Green
     Write-Host "Main recebeu exatamente a arvore da homologacao."
     Write-Host "Ponto de recuperacao do codigo: $tagBackup"
-    Write-Host "Backup do banco: $backupProducao"
+    if ($SomenteCodigo) {
+        Write-Host "Banco de Production preservado sem alteracoes."
+    } else {
+        Write-Host "Backup do banco: $backupProducao"
+    }
     Write-Host "A Vercel iniciara o deploy de Production a partir da main."
 } finally {
     try {
