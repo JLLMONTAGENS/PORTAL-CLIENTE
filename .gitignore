@@ -7,3 +7,4 @@ node_modules/
 **/android/*.jks
 **/android/*.keystore
 **/release/
+**/google-services.json.backup-*
