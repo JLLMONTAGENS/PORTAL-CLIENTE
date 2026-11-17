@@ -129,7 +129,7 @@ function Testar-Utf8([string]$Raiz) {
 function Invoke-VercelEnvPull([string]$Ambiente, [string]$Destino) {
     $vercel = Get-Command "vercel" -ErrorAction SilentlyContinue
     if ($vercel) {
-        Invoke-Comando $vercel.Source @("env", "pull", $Destino, "--environment=$Ambiente", "--yes") -OcultarSaida
+        Invoke-Comando $vercel.Source @("env", "pull", $Destino, "--environment=$Ambiente", "--yes")
         return
     }
 
@@ -138,7 +138,34 @@ function Invoke-VercelEnvPull([string]$Ambiente, [string]$Destino) {
         throw "Vercel CLI nao encontrado. Instale com 'npm install -g vercel'."
     }
     Write-Host "Vercel CLI nao esta instalado; usando npx para executar a auditoria." -ForegroundColor Yellow
-    Invoke-Comando $npx.Source @("--yes", "vercel", "env", "pull", $Destino, "--environment=$Ambiente", "--yes") -OcultarSaida
+    Invoke-Comando $npx.Source @("--yes", "vercel", "env", "pull", $Destino, "--environment=$Ambiente", "--yes")
+}
+
+function Assert-VercelPronta([string]$RaizRepositorio) {
+    $vercel = Get-Command "vercel" -ErrorAction SilentlyContinue
+    if ($vercel) {
+        $saidaIdentidade = & $vercel.Source "whoami" 2>&1
+    } else {
+        $npx = Get-Command "npx" -ErrorAction SilentlyContinue
+        if (-not $npx) {
+            throw "Vercel CLI nao encontrado. Instale com 'npm install -g vercel'."
+        }
+        $saidaIdentidade = & $npx.Source "--yes" "vercel" "whoami" 2>&1
+    }
+    $codigoIdentidade = $LASTEXITCODE
+    $identidade = ($saidaIdentidade -join "`n").Trim()
+
+    if ($identidade -match "Logged out") {
+        throw "A Vercel CLI nao esta autenticada. Execute 'npx vercel login' e rode novamente a simulacao."
+    }
+    if ($codigoIdentidade -ne 0) {
+        throw "Nao foi possivel validar a autenticacao da Vercel CLI. Execute 'npx vercel login' e tente novamente."
+    }
+
+    $vinculo = Join-Path $RaizRepositorio ".vercel\project.json"
+    if (-not (Test-Path -LiteralPath $vinculo -PathType Leaf)) {
+        throw "Esta pasta ainda nao esta vinculada a Vercel. Depois do login, execute 'npx vercel link --project portal-cliente' e confirme o projeto portal-cliente."
+    }
 }
 
 function Assert-VariaveisObrigatorias($Variaveis, [string]$Ambiente) {
@@ -227,7 +254,10 @@ try {
     $remotaHomologacao = Get-SaidaComando "git" @("rev-parse", "origin/homologacao")
     $remotaMain = Get-SaidaComando "git" @("rev-parse", "origin/main")
     if ($localHomologacao -ne $remotaHomologacao) {
-        throw "A branch homologacao local nao coincide com origin/homologacao. Sincronize antes de promover."
+        if ($Executar) {
+            throw "A branch homologacao local nao coincide com origin/homologacao. Sincronize antes de promover."
+        }
+        Write-Host "A homologacao local ainda nao coincide com o GitHub. A simulacao continuara, mas a promocao real permanecera bloqueada ate o git push." -ForegroundColor Yellow
     }
     Write-Host "Homologacao: $($remotaHomologacao.Substring(0, 7))"
     Write-Host "Main atual: $($remotaMain.Substring(0, 7))"
@@ -250,6 +280,7 @@ try {
         Write-Host "Auditoria da Vercel ignorada somente nesta simulacao." -ForegroundColor Yellow
     } else {
         Write-Etapa "Auditando variaveis da Vercel sem exibir segredos"
+        Assert-VercelPronta $RaizRepositorio
         $DiretorioTemporario = Join-Path ([IO.Path]::GetTempPath()) "jll-promocao-$MarcaTempo"
         [void](New-Item -ItemType Directory -Path $DiretorioTemporario)
         $arquivoProducao = Join-Path $DiretorioTemporario ".env.production"
@@ -360,18 +391,24 @@ try {
     Write-Host "Backup do banco: $backupProducao"
     Write-Host "A Vercel iniciara o deploy de Production a partir da main."
 } finally {
-    Set-Location -LiteralPath $PSScriptRoot
-    if ($WorktreeTemporario -and (Test-Path -LiteralPath $WorktreeTemporario)) {
-        & git worktree remove --force $WorktreeTemporario *> $null
-    }
-    if (Get-Command git -ErrorAction SilentlyContinue) {
-        & git branch -D $BranchTemporaria *> $null
-    }
-    if ($DiretorioTemporario -and (Test-Path -LiteralPath $DiretorioTemporario)) {
-        Get-ChildItem -LiteralPath $DiretorioTemporario -File | ForEach-Object {
-            Remove-Item -LiteralPath $_.FullName -Force
+    try {
+        Set-Location -LiteralPath $PSScriptRoot
+        if ($WorktreeTemporario -and (Test-Path -LiteralPath $WorktreeTemporario)) {
+            & git worktree remove --force $WorktreeTemporario *> $null
         }
-        Remove-Item -LiteralPath $DiretorioTemporario -Force
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            & git show-ref --verify --quiet "refs/heads/$BranchTemporaria"
+            if ($LASTEXITCODE -eq 0) {
+                & git branch -D $BranchTemporaria *> $null
+            }
+        }
+        if ($DiretorioTemporario -and (Test-Path -LiteralPath $DiretorioTemporario)) {
+            Get-ChildItem -LiteralPath $DiretorioTemporario -File | ForEach-Object {
+                Remove-Item -LiteralPath $_.FullName -Force
+            }
+            Remove-Item -LiteralPath $DiretorioTemporario -Force
+        }
+    } finally {
+        Set-Location -LiteralPath $DiretorioInicial
     }
-    Set-Location -LiteralPath $DiretorioInicial
 }

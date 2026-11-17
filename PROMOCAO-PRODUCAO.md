@@ -31,7 +31,14 @@ A simulação não modifica a `main`, o banco ou a produção. Ela valida:
 - se Neon e Blob são compartilhados ou separados;
 - compatibilidade das chaves de criptografia.
 
-Se a Vercel CLI não estiver instalada, o comando usa `npx vercel`. A primeira execução pode pedir autenticação e associação ao projeto `portal-cliente`.
+Se a Vercel CLI não estiver instalada, o comando usa `npx vercel`. Antes da primeira simulação, autentique e vincule a pasta ao projeto correto:
+
+```powershell
+npx vercel login
+npx vercel link --project portal-cliente
+```
+
+No vínculo, confirme a equipe proprietária e o projeto existente `portal-cliente`. Esse procedimento apenas cria a associação local `.vercel/project.json`; não realiza deploy.
 
 ## Promoção efetiva
 
