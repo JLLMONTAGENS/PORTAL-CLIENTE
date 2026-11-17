@@ -110,6 +110,7 @@ FROM pg_class c
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind IN ('r', 'p')
   AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+  AND n.nspname NOT LIKE 'neon_%'
   AND n.nspname NOT LIKE 'pg_toast%'
 ORDER BY 1;
 "@
@@ -166,18 +167,18 @@ try {
 
     Write-Etapa "Criando backup completo da branch main"
     Set-Conexao $main
-    Invoke-Nativo "pg_dump" @("--format=custom", "--encoding=UTF8", "--no-owner", "--no-privileges", "--file=$backupMain") -OcultarSaida
+    Invoke-Nativo "pg_dump" @("--format=custom", "--encoding=UTF8", "--no-owner", "--no-privileges", "--schema=public", "--file=$backupMain") -OcultarSaida
     Write-Host "Backup: $backupMain" -ForegroundColor Green
 
     Write-Etapa "Gerando dump da branch homologacao"
     Set-Conexao $homologacao
-    $argumentosDump = @("--format=custom", "--encoding=UTF8", "--no-owner", "--no-privileges", "--file=$dumpHomologacao")
+    $argumentosDump = @("--format=custom", "--encoding=UTF8", "--no-owner", "--no-privileges", "--schema=public", "--file=$dumpHomologacao")
     if ($SomenteEstrutura) { $argumentosDump += "--schema-only" }
     Invoke-Nativo "pg_dump" $argumentosDump -OcultarSaida
 
     Write-Etapa "Restaurando homologacao sobre a branch main"
     Set-Conexao $main
-    Invoke-Nativo "pg_restore" @("--clean", "--if-exists", "--no-owner", "--no-privileges", "--exit-on-error", "--single-transaction", $dumpHomologacao) -OcultarSaida
+    Invoke-Nativo "pg_restore" @("--dbname=$($main.Database)", "--clean", "--if-exists", "--no-owner", "--no-privileges", "--exit-on-error", "--single-transaction", $dumpHomologacao) -OcultarSaida
 
     Write-Etapa "Validando as tabelas restauradas"
     $tabelasDestinoDepois = Get-Tabelas $main
