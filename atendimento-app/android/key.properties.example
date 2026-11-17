@@ -1,0 +1,4 @@
+storePassword=SUBSTITUA_PELA_SENHA_DO_ARQUIVO
+keyPassword=SUBSTITUA_PELA_SENHA_DA_CHAVE
+keyAlias=upload
+storeFile=C:/Users/Jean/Documents/JLL-Keys/jll-atendimento-upload.jks

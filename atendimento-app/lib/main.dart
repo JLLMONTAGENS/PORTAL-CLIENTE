@@ -12,11 +12,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
-import 'firebase_options.dart';
-
 const apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'https://portal-cliente-git-homologacao-jean-melo.vercel.app',
+  defaultValue: 'https://www.jllmontagens.com.br',
 );
 const vercelProtectionBypass = String.fromEnvironment(
   'VERCEL_PROTECTION_BYPASS',
@@ -34,9 +32,7 @@ Uri buildAdminUri() {
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await Firebase.initializeApp();
   } catch (_) {
     // A compilação continua utilizável sem Firebase até a configuração oficial.
   }
@@ -45,9 +41,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await Firebase.initializeApp();
   } catch (_) {
     // O portal permanece acessível mesmo se o push estiver indisponível.
   }
@@ -238,9 +232,7 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
   Future<void> _initializePush() async {
     try {
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
+        await Firebase.initializeApp();
       }
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission(alert: true, badge: true, sound: true);
