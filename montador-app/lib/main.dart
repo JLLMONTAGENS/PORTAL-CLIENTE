@@ -14,11 +14,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
-import 'firebase_options.dart';
-
 const apiBase = String.fromEnvironment(
   'API_BASE_URL',
-  defaultValue: 'https://portal-cliente-git-homologacao-jean-melo.vercel.app',
+  defaultValue: 'https://www.jllmontagens.com.br',
 );
 const vercelProtectionBypass = String.fromEnvironment(
   'VERCEL_PROTECTION_BYPASS',
@@ -27,9 +25,7 @@ const vercelProtectionBypass = String.fromEnvironment(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await Firebase.initializeApp();
   } catch (_) {
     // O trabalho offline permanece disponível mesmo se o push falhar.
   }
@@ -519,9 +515,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _initPush() async {
     try {
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
+        await Firebase.initializeApp();
       }
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission();

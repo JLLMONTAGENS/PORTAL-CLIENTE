@@ -189,6 +189,8 @@ async function openConversation(id,{initial=true,restoreScrollTop=null,silent=fa
     messageBox.querySelectorAll('img').forEach(image=>image.addEventListener('load',scrollToLatest,{once:true}));
     messageBox.addEventListener('scroll',updateJumpButton,{passive:true});
     jumpButton.addEventListener('click',scrollToLatest);
+    const conversationTools=conversationPane.querySelector('.conversation-tools');
+    conversationPane.querySelector('.conversation-actions')?.addEventListener('click',event=>{if(APP_MODE&&event.target.closest('button'))conversationTools.open=false});
     state.conversationSignature=signature;const restoredInput=conversationPane.querySelector('.conversation-form input[name="texto"]');if(restoredInput&&draft)restoredInput.value=draft;
     conversationPane.querySelector('.quote-button')?.addEventListener('click',()=>{const panel=conversationPane.querySelector('.quote-panel'),input=panel.querySelector('[name="agendadoPara"]');if(input){input.type='date';input.value=String(input.value||'').slice(0,10);const label=input.closest('label');if(label?.firstChild)label.firstChild.textContent='Data do agendamento'}panel.hidden=false});
     conversationPane.querySelector('.close-quote')?.addEventListener('click',()=>{conversationPane.querySelector('.quote-panel').hidden=true;openConversation(id,{initial:false,silent:true})});

@@ -18,8 +18,8 @@ module.exports=async function handler(req,res){
     const conversation=conversations[0];
     const [messages,quotes,events]=await Promise.all([
       sql`SELECT m.id,m.tipo_remetente AS sender_type,m.texto AS body,m.criado_em AS created_at,u.nome_exibicao AS sender_name,a.id AS attachment_id,a.tipo_mime AS attachment_mime,a.nome_arquivo AS attachment_name FROM mensagens m LEFT JOIN usuarios_atendimento u ON u.id=m.remetente_id LEFT JOIN anexos_mensagem a ON a.mensagem_id=m.id WHERE m.atendimento_id=${conversation.id} ORDER BY m.criado_em ASC`,
-      sql`SELECT id,numero_atendimento,descricao_servico,valor,agendado_para,endereco,bairro,cidade,referencia,status_orcamento,status_pag_cliente,criado_em,atualizado_em FROM orcamentos WHERE atendimento_id=${conversation.id} LIMIT 1`,
-      sql`SELECT tipo_evento,criado_em FROM eventos_atendimento WHERE atendimento_id=${conversation.id} AND tipo_evento IN ('ORCAMENTO_GERADO','MONTADOR_ATRIBUIDO','MONTADOR_SERVICO_ACEITO','MONTADOR_A_CAMINHO','MONTADOR_CHEGOU','ATENDIMENTO_FINALIZADO','ATENDIMENTO_CANCELADO') ORDER BY criado_em ASC`
+      sql`SELECT id,numero_atendimento,descricao_servico,valor,agendado_para,endereco,bairro,cidade,referencia,status_orcamento,status_pag_cliente,aceito_cliente_em,criado_em,atualizado_em FROM orcamentos WHERE atendimento_id=${conversation.id} LIMIT 1`,
+      sql`SELECT tipo_evento,criado_em FROM eventos_atendimento WHERE atendimento_id=${conversation.id} AND tipo_evento IN ('ORCAMENTO_GERADO','ORCAMENTO_ACEITO_CLIENTE','MONTADOR_ATRIBUIDO','MONTADOR_SERVICO_ACEITO','MONTADOR_A_CAMINHO','MONTADOR_CHEGOU','ATENDIMENTO_FINALIZADO','ATENDIMENTO_CANCELADO') ORDER BY criado_em ASC`
     ]);
     const quote=quotes[0]||null,eventTime=type=>events.find(event=>event.tipo_evento===type)?.criado_em||null;
     const assigned=eventTime('MONTADOR_ATRIBUIDO'),accepted=eventTime('MONTADOR_SERVICO_ACEITO');
@@ -29,7 +29,7 @@ module.exports=async function handler(req,res){
     const acceptedDescription=professionalContact?`${professionalName} · ${professionalContact}`:professionalName;
     const tracking=[
       {key:'received',label:'Atendimento recebido',description:'Seu atendimento está registrado na JLL Montagens.',state:'complete',occurredAt:conversation.criado_em},
-      {key:'scheduled',label:'Orçamento e agendamento',description:quote?'Orçamento preparado e data registrada.':'Aguardando a preparação do orçamento.',state:quote?'complete':'current',occurredAt:quote?.criado_em||null},
+      {key:'scheduled',label:'Orçamento e agendamento',description:quote?.aceito_cliente_em?'Orçamento aceito pelo cliente.':quote?'Orçamento preparado; aguardando o aceite do cliente.':'Aguardando a preparação do orçamento.',state:quote?.aceito_cliente_em?'complete':quote?'current':'pending',occurredAt:quote?.aceito_cliente_em||quote?.criado_em||null},
       {key:'assigned',label:accepted?'Profissional para o atendimento':'Profissional definido',description:accepted?acceptedDescription:assigned?'Aguardando a confirmação do profissional.':'Aguardando a definição do profissional.',state:accepted?'complete':assigned||quote?'current':'pending',occurredAt:accepted||assigned},
       {key:'on_the_way',label:'A caminho',description:onTheWay?'O profissional informou que está se dirigindo ao endereço.':'O acompanhamento do trajeto aparecerá aqui quando o deslocamento começar.',state:onTheWay?'complete':accepted?'current':'pending',occurredAt:onTheWay},
       {key:'arrived',label:'Chegou ao local',description:arrived?'Chegada ao endereço confirmada.':'Aguardando chegada ao endereço.',state:arrived?'complete':onTheWay?'current':'pending',occurredAt:arrived},
@@ -44,7 +44,8 @@ module.exports=async function handler(req,res){
     else if(onTheWay)currentStatus='Profissional a caminho';
     else if(accepted)currentStatus='Profissional confirmado';
     else if(assigned)currentStatus='Aguardando confirmação do profissional';
-    else if(quote)currentStatus='Agendamento confirmado';
+    else if(quote?.aceito_cliente_em)currentStatus='Orçamento aceito';
+    else if(quote)currentStatus='Aguardando aceite do orçamento';
     return res.status(200).json({conversation:{...publicConversation(conversation),canInteract:!['SERVICO_FINALIZADO','CANCELADO'].includes(conversation.status)},messages,quote,tracking,currentStatus,trackingLive:Boolean(onTheWay&&!arrived&&!finished&&!cancelled)});
   }catch(error){
     console.error('Tracking load failed',error);

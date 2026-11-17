@@ -3,3 +3,7 @@ node_modules/
 .env.*
 .vercel
 .env*
+**/android/key.properties
+**/android/*.jks
+**/android/*.keystore
+**/release/
