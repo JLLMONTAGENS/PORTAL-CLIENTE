@@ -2,7 +2,7 @@ const crypto=require('crypto');
 const nodemailer=global.__JLL_NODEMAILER||require('nodemailer');
 const {getDatabase}=require('../_db');
 
-const TERM_VERSION='2026-10-31.1';
+const TERM_VERSION='2026-11-18.1';
 const MIN_PASSWORD_LENGTH=6;
 const TERM_HASHES={
   PRIVACIDADE_LGPD:crypto.createHash('sha256').update('JLL-LGPD-'+TERM_VERSION).digest('hex'),
@@ -12,6 +12,9 @@ const TERM_HASHES={
 const STATUS=['CADASTRO_RECEBIDO','PENDENTE_DOCUMENTO','EM_ANALISE','APROVADO','REJEITADO','SUSPENSO'];
 const digits=value=>String(value||'').replace(/\D/g,'');
 const clean=value=>String(value||'').trim().replace(/\s+/g,' ');
+const envFlag=(name,fallback=false)=>{const value=clean(process.env[name]).toLowerCase();if(!value)return fallback;return ['1','true','sim','yes','on'].includes(value)};
+const certificateRequired=()=>envFlag('MONTADOR_CERTIDAO_OBRIGATORIA',false);
+const certificateTutorialUrl=()=>{const value=clean(process.env.MONTADOR_CERTIDAO_TUTORIAL_URL);if(!value)return null;try{const url=new URL(value);return ['http:','https:'].includes(url.protocol)?url.toString():null}catch{return null}};
 const validCpf=value=>{const cpf=digits(value);if(cpf.length!==11||/^(\d)\1+$/.test(cpf))return false;for(const size of [9,10]){let sum=0;for(let i=0;i<size;i++)sum+=Number(cpf[i])*(size+1-i);const check=(sum*10)%11%10;if(check!==Number(cpf[size]))return false}return true};
 const validCnpj=value=>{const cnpj=digits(value);if(cnpj.length!==14||/^(\d)\1+$/.test(cnpj))return false;for(const size of [12,13]){const weights=size===12?[5,4,3,2,9,8,7,6,5,4,3,2]:[6,5,4,3,2,9,8,7,6,5,4,3,2];const sum=weights.reduce((total,w,i)=>total+Number(cnpj[i])*w,0);const rest=sum%11;const check=rest<2?0:11-rest;if(check!==Number(cnpj[size]))return false}return true};
 const validEmail=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean(value).toLowerCase());
@@ -34,4 +37,4 @@ async function sendAssemblerEmail(montadorId,to,type,subject,html){const sql=get
 const statusLabel=status=>({CADASTRO_RECEBIDO:'Cadastro recebido',PENDENTE_DOCUMENTO:'Pendente de certidão',EM_ANALISE:'Em análise',APROVADO:'Aprovado',REJEITADO:'Não aprovado',SUSPENSO:'Suspenso',LEGADO:'Cadastro legado'}[status]||status);
 async function notifyStatus(row,previous){if(!row?.email)return;await sendAssemblerEmail(row.id,row.email,'STATUS_ALTERADO',`Área do Montador: ${statusLabel(row.status_cadastro)}`,emailLayout('Atualização do seu cadastro',`<p>Olá, ${clean(row.nome_completo||row.nome)}.</p><p>O status do seu cadastro mudou de <strong>${statusLabel(previous)}</strong> para <strong>${statusLabel(row.status_cadastro)}</strong>.</p><p>Acesse a Área do Montador para acompanhar as pendências.</p>`))}
 
-module.exports={TERM_VERSION,MIN_PASSWORD_LENGTH,TERM_HASHES,STATUS,digits,clean,validCpf,validCnpj,validEmail,validFullName,hashPassword,verifyPassword,sessionToken,currentAssembler,requestIp,maskCpf,publicAssembler,encrypt,decrypt,emailLayout,sendAssemblerEmail,notifyStatus,statusLabel};
+module.exports={TERM_VERSION,MIN_PASSWORD_LENGTH,TERM_HASHES,STATUS,digits,clean,envFlag,certificateRequired,certificateTutorialUrl,validCpf,validCnpj,validEmail,validFullName,hashPassword,verifyPassword,sessionToken,currentAssembler,requestIp,maskCpf,publicAssembler,encrypt,decrypt,emailLayout,sendAssemblerEmail,notifyStatus,statusLabel};

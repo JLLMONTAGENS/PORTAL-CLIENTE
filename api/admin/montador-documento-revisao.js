@@ -20,7 +20,8 @@ module.exports=async function(req,res){
     }
     const assembler=(await sql`SELECT * FROM montadores WHERE id=${doc.montador_id} LIMIT 1`)[0];
     if(doc.tipo==='CERTIDAO_ANTECEDENTES'){
-      const updated=(await sql`UPDATE montadores SET certidao_status=${status},status_cadastro=CASE WHEN ${status}='REJEITADO' THEN 'PENDENTE_DOCUMENTO' ELSE status_cadastro END,atualizado_em=NOW() WHERE id=${doc.montador_id} RETURNING *`)[0];
+      const bloqueiaCadastro=status==='REJEITADO'&&c.certificateRequired();
+      const updated=(await sql`UPDATE montadores SET certidao_status=${status},status_cadastro=CASE WHEN ${bloqueiaCadastro} THEN 'PENDENTE_DOCUMENTO' ELSE status_cadastro END,atualizado_em=NOW() WHERE id=${doc.montador_id} RETURNING *`)[0];
       if(updated.status_cadastro!==assembler.status_cadastro)await c.notifyStatus(updated,assembler.status_cadastro);
       await c.sendAssemblerEmail(updated.id,updated.email,'CERTIDAO_REVISADA',`Certidão ${status==='APROVADO'?'aprovada':'rejeitada'}`,c.emailLayout('Revisão da certidão',`<p>Olá, ${c.clean(updated.nome_completo||updated.nome)}.</p><p>Sua certidão foi <strong>${status==='APROVADO'?'aprovada':'rejeitada'}</strong>${status==='REJEITADO'?'. Envie um novo documento válido para retomar a análise.':'. A aprovação final do cadastro continua sujeita à análise dos demais dados.'}</p>`));
     }

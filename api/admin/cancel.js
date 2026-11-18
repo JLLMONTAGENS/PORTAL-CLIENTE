@@ -13,13 +13,19 @@ module.exports=async function handler(req,res){
     if(atendimento.status==='SERVICO_FINALIZADO')return res.status(409).json({error:'Atendimentos finalizados não podem ser cancelados.'});
     if(atendimento.status==='CANCELADO')return res.status(409).json({error:'Este atendimento já foi cancelado.'});
     if(!canManageAll(user)&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável, gestor ou administrador pode cancelar o atendimento.'});
-    const existingQuotes=await sql`SELECT id,status_orcamento FROM orcamentos WHERE atendimento_id=${atendimentoId} LIMIT 1`,existingQuote=existingQuotes[0]||null;
+    const existingQuotes=await sql`SELECT o.id,o.status_orcamento,o.status_pag_cliente,o.status_pg_montador,EXISTS(SELECT 1 FROM pagamentos_montador_itens i WHERE i.orcamento_id=o.id) AS possui_repasse FROM orcamentos o WHERE o.atendimento_id=${atendimentoId} LIMIT 1`,existingQuote=existingQuotes[0]||null;
     if(existingQuote?.status_orcamento==='FINALIZADO')return res.status(409).json({error:'Este atendimento possui um orçamento finalizado e não pode ser cancelado.'});
-    const quotes=existingQuote?await sql`UPDATE orcamentos SET status_orcamento='CANCELADO',link_pagamento=NULL,atualizado_em=NOW() WHERE id=${existingQuote.id} RETURNING id`:[];
-    await sql`UPDATE atendimentos SET status='CANCELADO',encerrado_em=COALESCE(encerrado_em,NOW()),atualizado_em=NOW() WHERE id=${atendimentoId}`;
+    if(existingQuote?.status_pag_cliente==='PAGO')return res.status(409).json({error:'O pagamento do cliente já foi confirmado. Regularize o pagamento antes de cancelar.'});
+    if(existingQuote?.possui_repasse||existingQuote?.status_pg_montador==='PAGO')return res.status(409).json({error:'Este orçamento já está vinculado a um pagamento de montador e não pode ser cancelado por aqui.'});
     const message='Atendimento cancelado. Se precisar solicitar um novo serviço, a equipe JLL Montagens permanece à disposição.';
-    await sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,texto) VALUES (${atendimentoId},'SISTEMA',${message})`;
-    await sql`INSERT INTO eventos_atendimento (atendimento_id,tipo_evento,detalhes) VALUES (${atendimentoId},'ATENDIMENTO_CANCELADO',${JSON.stringify({orcamentoId:quotes[0]?.id||null,usuario:user.id})}::jsonb)`;
-    return res.status(200).json({ok:true,atendimentoId,orcamentoCancelado:Boolean(quotes[0])});
-  }catch(error){console.error(error);return res.status(500).json({error:'Não foi possível cancelar o atendimento.'})}
+    const operations=[];
+    if(existingQuote)operations.push(sql`UPDATE orcamentos SET status_orcamento='CANCELADO',link_pagamento=NULL,id_pagamento_externo=NULL,status_execucao_montador=NULL,atribuicao_versao=NULL,montador_id=NULL,atualizado_em=NOW() WHERE id=${existingQuote.id} AND status_orcamento NOT IN ('FINALIZADO','CANCELADO') RETURNING id`);
+    operations.push(sql`UPDATE atendimentos SET status='CANCELADO',montador_id=NULL,encerrado_em=COALESCE(encerrado_em,NOW()),atualizado_em=NOW() WHERE id=${atendimentoId} AND status NOT IN ('SERVICO_FINALIZADO','CANCELADO') RETURNING id`);
+    operations.push(sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,texto) VALUES (${atendimentoId},'SISTEMA',${message})`);
+    operations.push(sql`INSERT INTO eventos_atendimento (atendimento_id,tipo_evento,detalhes) VALUES (${atendimentoId},'ATENDIMENTO_CANCELADO',${JSON.stringify({orcamentoId:existingQuote?.id||null,usuario:user.id})}::jsonb)`);
+    const results=await sql.transaction(operations);
+    const attendanceResult=results[existingQuote?1:0];
+    if(!attendanceResult?.[0])return res.status(409).json({error:'O atendimento mudou de situação. Atualize a tela e tente novamente.'});
+    return res.status(200).json({ok:true,atendimentoId,orcamentoCancelado:Boolean(existingQuote),mensagem:existingQuote?'Atendimento e orçamento cancelados com sucesso.':'Atendimento cancelado com sucesso.'});
+  }catch(error){console.error('Falha ao cancelar atendimento',{atendimentoId:req.body?.atendimentoId,codigo:error?.code,restricao:error?.constraint,mensagem:error?.message});if(error?.code==='23514')return res.status(409).json({error:'A estrutura do banco ainda não permite o status cancelado. Aplique a migração de cancelamento e tente novamente.'});return res.status(500).json({error:'Não foi possível cancelar o atendimento e o orçamento. Nenhuma alteração parcial foi mantida.'})}
 };
