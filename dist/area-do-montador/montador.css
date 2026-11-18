@@ -2,3 +2,5 @@
 .notice-action{display:inline-flex;margin:12px 0 0;padding:9px 12px;border-radius:7px;background:#1A2B4C;color:#fff;font-weight:850;text-decoration:none}
 .link-action{border:0;background:transparent;color:#1A2B4C;font-weight:800;text-decoration:underline;cursor:pointer;padding:10px}.panel.compact form{display:grid;gap:14px}.panel{scroll-margin-top:18px}
 @media(max-width:800px){.intro{padding:20px}.intro h1{font-size:2.7rem}.intro aside{padding:16px}.intro p{font-size:.95rem}.panel{scroll-margin-top:12px}}
+body.assembler-authenticated .intro{display:none}
+body.assembler-authenticated #status-view{margin-top:0}
