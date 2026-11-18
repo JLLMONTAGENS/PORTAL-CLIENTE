@@ -3,7 +3,8 @@ const banks=[['001','Banco do Brasil'],['003','Banco da Amazônia'],['004','Banc
 $('#banks').innerHTML=banks.map(([code,name])=>`<option value="${code} - ${name}"></option>`).join('');
 const api=async(url,options={})=>{const response=await fetch(url,{cache:'no-store',...options}),data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'Não foi possível concluir a operação.');return data};
 const show=view=>{registerView.hidden=view!=='register';loginView.hidden=view!=='login';statusView.hidden=view!=='status';resetRequestView.hidden=view!=='reset-request';resetConfirmView.hidden=view!=='reset-confirm';scrollTo({top:0,behavior:'smooth'})};
-$('#show-register').onclick=()=>show('register');$('#show-login').onclick=()=>show('login');
+const showAndFocus=view=>{show(view);requestAnimationFrame(()=>{const target=view==='register'?registerView:loginView;target.scrollIntoView({behavior:'smooth',block:'start'});const heading=target.querySelector('h2');if(heading){heading.setAttribute('tabindex','-1');heading.focus({preventScroll:true})}})};
+$('#show-register').onclick=()=>showAndFocus('register');$('#show-login').onclick=()=>showAndFocus('login');
 const onlyDigits=value=>String(value||'').replace(/\D/g,'');
 const mask=(input,type)=>{let v=onlyDigits(input.value);if(type==='cpf')v=v.slice(0,11).replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');if(type==='cnpj')v=v.slice(0,14).replace(/(\d{2})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1/$2').replace(/(\d{4})(\d{1,2})$/,'$1-$2');if(type==='cep')v=v.slice(0,8).replace(/(\d{5})(\d)/,'$1-$2');input.value=v};
 const form=$('#register-form');form.elements.cpf.addEventListener('input',e=>mask(e.target,'cpf'));form.elements.cnpj.addEventListener('input',e=>mask(e.target,'cnpj'));form.elements.cep.addEventListener('input',e=>mask(e.target,'cep'));
