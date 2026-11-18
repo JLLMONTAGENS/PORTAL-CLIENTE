@@ -4,7 +4,9 @@
 BEGIN;
 
 ALTER TABLE montadores
-  ADD COLUMN IF NOT EXISTS percentual_repasse NUMERIC(5,2) NOT NULL DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS percentual_repasse NUMERIC(5,2) NOT NULL DEFAULT 60;
+
+ALTER TABLE montadores ALTER COLUMN percentual_repasse SET DEFAULT 60;
 
 ALTER TABLE montadores DROP CONSTRAINT IF EXISTS montadores_percentual_repasse_check;
 ALTER TABLE montadores ADD CONSTRAINT montadores_percentual_repasse_check
@@ -38,6 +40,8 @@ ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS status_orcamento TEXT NOT NULL D
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS status_pag_cliente TEXT NOT NULL DEFAULT 'PENDENTE';
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS status_pg_montador TEXT NOT NULL DEFAULT 'PENDENTE';
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS valor_montador NUMERIC(18,2) NOT NULL DEFAULT 0;
+ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS modo_valor_montador TEXT NOT NULL DEFAULT 'PERCENTUAL';
+ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS percentual_repasse_aplicado NUMERIC(5,2);
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS adicional_montador NUMERIC(18,2) NOT NULL DEFAULT 0;
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS origem_pagamento_cliente TEXT;
 ALTER TABLE orcamentos ADD COLUMN IF NOT EXISTS provedor_pagamento TEXT;

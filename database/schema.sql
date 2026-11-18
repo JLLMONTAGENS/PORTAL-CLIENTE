@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS montadores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT NOT NULL,
   telefone TEXT,
-  percentual_repasse NUMERIC(5,2) NOT NULL DEFAULT 0 CHECK (percentual_repasse >= 0 AND percentual_repasse <= 100),
+  percentual_repasse NUMERIC(5,2) NOT NULL DEFAULT 60 CHECK (percentual_repasse >= 0 AND percentual_repasse <= 100),
   ativo BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -96,6 +96,8 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   status_pag_cliente TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status_pag_cliente IN ('PENDENTE', 'PAGO')),
   status_pg_montador TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status_pg_montador IN ('PENDENTE', 'PAGO')),
   valor_montador NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (valor_montador >= 0),
+  modo_valor_montador TEXT NOT NULL DEFAULT 'PERCENTUAL' CHECK (modo_valor_montador IN ('PERCENTUAL', 'VALOR')),
+  percentual_repasse_aplicado NUMERIC(5,2) CHECK (percentual_repasse_aplicado IS NULL OR (percentual_repasse_aplicado >= 0 AND percentual_repasse_aplicado <= 100)),
   adicional_montador NUMERIC(18,2) NOT NULL DEFAULT 0 CHECK (adicional_montador >= 0),
   origem_pagamento_cliente TEXT CHECK (origem_pagamento_cliente IS NULL OR origem_pagamento_cliente IN ('MANUAL', 'LINK')),
   provedor_pagamento TEXT,
