@@ -38,8 +38,10 @@ document.addEventListener('pointerdown',event=>document.querySelectorAll('.multi
 document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.multi-select-control[open]').forEach(control=>control.open=false)});
 document.documentElement.classList.toggle('app-mode',APP_MODE);
 let pendingPushDevice=null;
+let pendingNotificationTarget=null;
 async function registerPendingPushDevice(){if(!APP_MODE||!state.user||!pendingPushDevice)return;try{await api('/api/admin/dispositivo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pendingPushDevice)});pendingPushDevice=null}catch(error){console.warn('Dispositivo ainda não registrado:',error.message)}}
 window.addEventListener('jll-push-token',event=>{pendingPushDevice=event.detail||null;registerPendingPushDevice()});
+window.addEventListener('jll-open-notification',event=>{pendingNotificationTarget=event.detail||null;openPendingNotificationTarget()});
 const usersMenu=document.querySelector('#users-menu');
 usersMenu.insertAdjacentHTML('beforebegin','<a id="assemblers-admin-menu" class="menu-link admin-page-link" href="/admin/montadores.html" hidden>Cadastro de Montadores</a>');
 usersMenu.insertAdjacentHTML('beforebegin','<a id="assembler-payments-admin-menu" class="menu-link admin-page-link" href="/admin/pagamentos-montadores.html" hidden>Pagamentos de Montadores</a>');
@@ -244,6 +246,19 @@ async function openConversation(id,{initial=true,restoreScrollTop=null,silent=fa
   finally{state.conversationLoading=false;finishConversationTask();state.conversationTask=null;if(usedCache&&state.currentConversation===id)setTimeout(()=>openConversation(id,{initial:false,silent:true,forceNetwork:true}),0)}
 }
 
+function focusNotificationMessage(messageId,selector='.conversation-messages'){
+  if(!messageId)return;const box=$(selector),message=box?.querySelector(`[data-message-id="${CSS.escape(String(messageId))}"]`);if(!message)return;
+  message.scrollIntoView({behavior:'smooth',block:'center'});message.classList.remove('notification-target');requestAnimationFrame(()=>message.classList.add('notification-target'));setTimeout(()=>message.classList.remove('notification-target'),3200);
+}
+async function openPendingNotificationTarget(){
+  const target=pendingNotificationTarget;if(!target||!state.user)return;
+  try{
+    if(target.tipo==='CHAT_INTERNO'&&target.contatoId){switchView('internal-chat');if(window.jllOpenInternalNotification)await window.jllOpenInternalNotification(target);pendingNotificationTarget=null;return}
+    if(!target.atendimentoId)return;
+    switchView('attendances');await openConversation(String(target.atendimentoId),{initial:true,forceNetwork:true});focusNotificationMessage(target.mensagemId);pendingNotificationTarget=null;
+  }catch(error){pendingNotificationTarget=null;showError(error)}
+}
+
 function switchView(view){
   dashboard.classList.remove('sidebar-open');adminMenuToggle?.setAttribute('aria-expanded','false');
   if(APP_MODE&&!['attendances','internal-chat'].includes(view))view='attendances';
@@ -357,7 +372,7 @@ function openUserModal(user=null){
   const form=$('#user-form');form.reset();form.elements.id.value=user?.id||'';form.elements.nomeExibicao.value=user?.nomeExibicao||'';form.elements.nomeCompleto.value=user?.nomeCompleto||'';form.elements.login.value=user?.login||'';form.elements.email.value=user?.email||'';form.elements.perfil.value=user?.perfil||'ATENDENTE';form.elements.ativo.checked=user?.ativo!==false;form.elements.senha.required=!user;$('#active-field').hidden=!user;$('#password-hint').textContent=user?'(deixe vazio para manter a atual)':'(mínimo de 6 caracteres)';$('#user-modal-title').textContent=user?'Editar usuário':'Cadastrar usuário';$('#user-message').textContent='';$('#user-modal').hidden=false;
 }
 
-$('#login-form').addEventListener('submit',async event=>{event.preventDefault();const button=event.currentTarget.querySelector('button'),values=Object.fromEntries(new FormData(event.currentTarget));values.manterConectado=APP_MODE||event.currentTarget.elements.manterConectado.checked;button.disabled=true;$('#login-error').textContent='';try{await api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});loginView.hidden=true;dashboard.hidden=false;await loadConversations();startLiveUpdates()}catch(error){$('#login-error').textContent=error.message}finally{button.disabled=false}});
+$('#login-form').addEventListener('submit',async event=>{event.preventDefault();const button=event.currentTarget.querySelector('button'),values=Object.fromEntries(new FormData(event.currentTarget));values.manterConectado=APP_MODE||event.currentTarget.elements.manterConectado.checked;button.disabled=true;$('#login-error').textContent='';try{await api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});loginView.hidden=true;dashboard.hidden=false;await loadConversations();startLiveUpdates();await openPendingNotificationTarget()}catch(error){$('#login-error').textContent=error.message}finally{button.disabled=false}});
 $('#forgot-password').addEventListener('click',()=>{$('#forgot-password-form').reset();$('#forgot-password-message').className='error';$('#forgot-password-message').textContent='';$('#forgot-password-modal').hidden=false});
 $('#close-forgot-password').addEventListener('click',()=>$('#forgot-password-modal').hidden=true);
 $('#forgot-password-form').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget,button=form.querySelector('button'),message=$('#forgot-password-message'),values=Object.fromEntries(new FormData(form));button.disabled=true;message.className='error';message.textContent='';try{const data=await api('/api/admin/senha-solicitar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});form.reset();message.className='success';message.textContent=data.mensagem}catch(error){message.className='error';message.textContent=error.message}finally{button.disabled=false}});
@@ -400,6 +415,6 @@ installButtons.forEach(button=>button.addEventListener('click',async()=>{if(!def
 window.addEventListener('appinstalled',()=>{hideInstallButtons();iosInstallNote.hidden=true});
 const isIos=/iphone|ipad|ipod/i.test(navigator.userAgent),isStandalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;if(isIos&&!isStandalone)iosInstallNote.hidden=false;
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/admin/app-sw.js',{scope:'/admin/'}).catch(error=>console.warn('Service worker não registrado:',error)));
-async function restoreSession(){sessionLoading.hidden=false;loginView.hidden=true;dashboard.hidden=true;const restored=await loadConversations({silent:true});sessionLoading.hidden=true;if(restored&&state.user){loginView.hidden=true;dashboard.hidden=false;startLiveUpdates()}else{dashboard.hidden=true;loginView.hidden=false}}
+async function restoreSession(){sessionLoading.hidden=false;loginView.hidden=true;dashboard.hidden=true;const restored=await loadConversations({silent:true});sessionLoading.hidden=true;if(restored&&state.user){loginView.hidden=true;dashboard.hidden=false;startLiveUpdates();await openPendingNotificationTarget()}else{dashboard.hidden=true;loginView.hidden=false}}
 if(APP_MODE)$('#login-form').elements.manterConectado.checked=true;
 const resetToken=new URLSearchParams(location.search).get('redefinir');if(resetToken){sessionLoading.hidden=true;loginView.hidden=false;dashboard.hidden=true;$('#reset-password-modal').hidden=false}else restoreSession();

@@ -35,9 +35,10 @@ async function sendToFirebase({credentials,accessToken,target,notification,data}
   return {response,body,targetType};
 }
 
-async function notifyAttendance({atendimentoId,tipo,titulo,mensagem,usuarioId=null}){
+async function notifyAttendance({atendimentoId,tipo,titulo,mensagem,usuarioId=null,dados={}}){
   if(!atendimentoId)return;
-  const sql=getDatabase(),credentials=firebaseCredentials(),notification=(await sql`INSERT INTO notificacoes_push_atendimento (atendimento_id,tipo,titulo,mensagem,dados,status) VALUES (${atendimentoId},${tipo},${titulo},${mensagem},${JSON.stringify({atendimentoId:String(atendimentoId)})}::jsonb,${credentials?'PENDENTE':'AGUARDANDO_CONFIGURACAO'}) RETURNING id`)[0];
+  const payload=Object.fromEntries(Object.entries({tipo,atendimentoId:String(atendimentoId),...dados}).filter(([,value])=>value!==null&&value!==undefined).map(([key,value])=>[key,String(value)]));
+  const sql=getDatabase(),credentials=firebaseCredentials(),notification=(await sql`INSERT INTO notificacoes_push_atendimento (atendimento_id,tipo,titulo,mensagem,dados,status) VALUES (${atendimentoId},${tipo},${titulo},${mensagem},${JSON.stringify(payload)}::jsonb,${credentials?'PENDENTE':'AGUARDANDO_CONFIGURACAO'}) RETURNING id`)[0];
   if(!credentials?.project_id||!credentials?.client_email||!credentials?.private_key)return;
   try{
     const token=await accessToken(credentials);
@@ -47,7 +48,7 @@ async function notifyAttendance({atendimentoId,tipo,titulo,mensagem,usuarioId=nu
     if(!devices.length){await sql`UPDATE notificacoes_push_atendimento SET status='SEM_DISPOSITIVO',atualizado_em=NOW() WHERE id=${notification.id}`;return}
     const results=[];
     for(const device of devices){
-      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:titulo,body:mensagem},data:{tipo,atendimentoId:String(atendimentoId)}});
+      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:titulo,body:mensagem},data:payload});
       results.push({deviceId:device.id,targetType,ok:response.ok,status:response.status,resposta:body.slice(0,300)});if([404,410].includes(response.status))await sql`UPDATE dispositivos_usuario SET ativo=FALSE WHERE id=${device.id}`;
     }
     const sent=results.some(item=>item.ok);await sql`UPDATE notificacoes_push_atendimento SET status=${sent?'ENVIADA':'FALHOU'},resultado=${JSON.stringify(results)}::jsonb,enviado_em=CASE WHEN ${sent} THEN NOW() ELSE enviado_em END,atualizado_em=NOW() WHERE id=${notification.id}`;
@@ -57,7 +58,7 @@ async function notifyAttendance({atendimentoId,tipo,titulo,mensagem,usuarioId=nu
 async function notifyUser({usuarioId,mensagemInternaId=null,tipo,titulo,mensagem,dados={}}){
   if(!usuarioId)return;const sql=getDatabase();await ensureChatSchema(sql);const credentials=firebaseCredentials(),notification=(await sql`INSERT INTO notificacoes_push_interna (usuario_id,mensagem_interna_id,titulo,mensagem,status) VALUES (${usuarioId},${mensagemInternaId},${titulo},${mensagem},${credentials?'PENDENTE':'AGUARDANDO_CONFIGURACAO'}) RETURNING id`)[0];
   if(!credentials?.project_id||!credentials?.client_email||!credentials?.private_key)return;
-  try{const token=await accessToken(credentials),devices=await sql`SELECT id,push_token FROM dispositivos_usuario WHERE usuario_id=${usuarioId} AND ativo=TRUE`;if(!devices.length){await sql`UPDATE notificacoes_push_interna SET status='SEM_DISPOSITIVO',atualizado_em=NOW() WHERE id=${notification.id}`;return}const payload=Object.fromEntries(Object.entries({tipo,...dados}).map(([key,value])=>[key,String(value)])),results=[];for(const device of devices){const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:titulo,body:mensagem},data:payload});results.push({deviceId:device.id,targetType,ok:response.ok,status:response.status,resposta:body.slice(0,300)});if([404,410].includes(response.status))await sql`UPDATE dispositivos_usuario SET ativo=FALSE WHERE id=${device.id}`}const sent=results.some(item=>item.ok);await sql`UPDATE notificacoes_push_interna SET status=${sent?'ENVIADA':'FALHOU'},resultado=${JSON.stringify(results)}::jsonb,enviado_em=CASE WHEN ${sent} THEN NOW() ELSE enviado_em END,atualizado_em=NOW() WHERE id=${notification.id}`}catch(error){console.error('Push interno falhou',error);await sql`UPDATE notificacoes_push_interna SET status='FALHOU',ultimo_erro=${String(error.message||error).slice(0,500)},atualizado_em=NOW() WHERE id=${notification.id}`}
+  try{const token=await accessToken(credentials),devices=await sql`SELECT id,push_token FROM dispositivos_usuario WHERE usuario_id=${usuarioId} AND ativo=TRUE`;if(!devices.length){await sql`UPDATE notificacoes_push_interna SET status='SEM_DISPOSITIVO',atualizado_em=NOW() WHERE id=${notification.id}`;return}const payload=Object.fromEntries(Object.entries({tipo,mensagemInternaId,...dados}).filter(([,value])=>value!==null&&value!==undefined).map(([key,value])=>[key,String(value)])),results=[];for(const device of devices){const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:titulo,body:mensagem},data:payload});results.push({deviceId:device.id,targetType,ok:response.ok,status:response.status,resposta:body.slice(0,300)});if([404,410].includes(response.status))await sql`UPDATE dispositivos_usuario SET ativo=FALSE WHERE id=${device.id}`}const sent=results.some(item=>item.ok);await sql`UPDATE notificacoes_push_interna SET status=${sent?'ENVIADA':'FALHOU'},resultado=${JSON.stringify(results)}::jsonb,enviado_em=CASE WHEN ${sent} THEN NOW() ELSE enviado_em END,atualizado_em=NOW() WHERE id=${notification.id}`}catch(error){console.error('Push interno falhou',error);await sql`UPDATE notificacoes_push_interna SET status='FALHOU',ultimo_erro=${String(error.message||error).slice(0,500)},atualizado_em=NOW() WHERE id=${notification.id}`}
 }
 
 module.exports={notifyAttendance,notifyUser};

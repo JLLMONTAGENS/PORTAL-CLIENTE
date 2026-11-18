@@ -84,6 +84,8 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
   int progress = 0;
   String? loadError;
   bool _handlingBack = false;
+  bool _pageReady = false;
+  Map<String, dynamic>? _pendingNotificationData;
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -99,7 +101,11 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: (value) => setState(() => progress = value),
-          onPageFinished: (_) => _publishPushToken(),
+          onPageFinished: (_) async {
+            _pageReady = true;
+            await _publishPushToken();
+            await _flushNotificationTarget();
+          },
           onWebResourceError: (error) {
             if (error.isForMainFrame == true) {
               setState(
@@ -175,14 +181,13 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
     return source;
   }
 
-  Future<XFile?> _pickImage(_AttachmentSource source) =>
-      _imagePicker.pickImage(
-        source: source == _AttachmentSource.camera
-            ? ImageSource.camera
-            : ImageSource.gallery,
-        imageQuality: 78,
-        maxWidth: 1800,
-      );
+  Future<XFile?> _pickImage(_AttachmentSource source) => _imagePicker.pickImage(
+    source: source == _AttachmentSource.camera
+        ? ImageSource.camera
+        : ImageSource.gallery,
+    imageQuality: 78,
+    maxWidth: 1800,
+  );
 
   Future<void> _handleNativeAttachment(JavaScriptMessage message) async {
     try {
@@ -195,7 +200,8 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
       if (file == null) return;
       final bytes = await file.readAsBytes();
       final lowerName = file.name.toLowerCase();
-      final mimeType = file.mimeType ??
+      final mimeType =
+          file.mimeType ??
           (lowerName.endsWith('.png')
               ? 'image/png'
               : lowerName.endsWith('.webp')
@@ -273,14 +279,40 @@ class _AtendimentoWebViewState extends State<AtendimentoWebView> {
             ),
             action: SnackBarAction(
               label: 'Abrir',
-              onPressed: () => controller.reload(),
+              onPressed: () => _openNotificationTarget(message.data),
             ),
           ),
         );
       });
-      FirebaseMessaging.onMessageOpenedApp.listen((_) => controller.reload());
+      FirebaseMessaging.onMessageOpenedApp.listen(
+        (message) => _openNotificationTarget(message.data),
+      );
+      final initialMessage = await messaging.getInitialMessage();
+      if (initialMessage != null) {
+        await _openNotificationTarget(initialMessage.data);
+      }
     } catch (_) {
       // O app funciona normalmente; o push será ativado após a configuração Firebase.
+    }
+  }
+
+  Future<void> _openNotificationTarget(Map<String, dynamic> data) async {
+    if (data.isEmpty) return;
+    _pendingNotificationData = Map<String, dynamic>.from(data);
+    await _flushNotificationTarget();
+  }
+
+  Future<void> _flushNotificationTarget() async {
+    final data = _pendingNotificationData;
+    if (!_pageReady || data == null) return;
+    final payload = jsonEncode(data);
+    try {
+      await controller.runJavaScript(
+        "window.dispatchEvent(new CustomEvent('jll-open-notification',{detail:$payload}));",
+      );
+      _pendingNotificationData = null;
+    } catch (_) {
+      // Mantém o destino pendente até a página administrativa terminar de abrir.
     }
   }
 

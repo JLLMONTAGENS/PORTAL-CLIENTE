@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
     await sql`UPDATE atendimentos SET atualizado_em = NOW() WHERE id = ${conversationId}`;
     try {
       const { notifyAttendance } = require('../admin/_push');
-      await notifyAttendance({ atendimentoId: conversationId, tipo: 'NOVA_IMAGEM_CLIENTE', titulo: 'Nova imagem do cliente', mensagem: `${open[0].nome_cliente} enviou uma imagem.`, usuarioId: open[0].atendente_id });
+      await notifyAttendance({ atendimentoId: conversationId, tipo: 'NOVA_IMAGEM_CLIENTE', titulo: 'Nova imagem do cliente', mensagem: `${open[0].nome_cliente} enviou uma imagem.`, usuarioId: open[0].atendente_id, dados: { mensagemId: message.id } });
     } catch (pushError) {
       console.error('Push de nova imagem não enviado', pushError);
     }

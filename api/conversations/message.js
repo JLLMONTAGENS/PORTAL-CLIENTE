@@ -14,7 +14,7 @@ module.exports = async function handler(req, res) {
     try {
       const { notifyAttendance } = require('../admin/_push');
       const preview = body.replace(/\s+/g, ' ').slice(0, 120);
-      await notifyAttendance({ atendimentoId: conversationId, tipo: 'NOVA_MENSAGEM_CLIENTE', titulo: 'Nova mensagem do cliente', mensagem: `${open[0].nome_cliente} enviou: ${preview}`, usuarioId: open[0].atendente_id });
+      await notifyAttendance({ atendimentoId: conversationId, tipo: 'NOVA_MENSAGEM_CLIENTE', titulo: 'Nova mensagem do cliente', mensagem: `${open[0].nome_cliente} enviou: ${preview}`, usuarioId: open[0].atendente_id, dados: { mensagemId: rows[0].id } });
     } catch (pushError) {
       console.error('Push de nova mensagem não enviado', pushError);
     }

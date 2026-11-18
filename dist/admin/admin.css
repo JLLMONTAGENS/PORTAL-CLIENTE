@@ -229,3 +229,5 @@ html.app-mode #admin-menu-toggle{display:none!important}
 #assign-assembler-form .quote-payout-mode label{display:flex;align-items:flex-start;gap:9px}
 #assign-assembler-form .quote-payout-mode input{width:auto;margin-top:4px}
 .assign-payout-preview{margin:0;padding:11px;border-left:4px solid #e67e22;background:#fff7ef;color:#5f452f;font-weight:800}
+.admin-message.notification-target,.internal-message.notification-target{animation:notification-target-pulse 3.2s ease;outline:3px solid transparent}
+@keyframes notification-target-pulse{0%,100%{outline-color:transparent}12%,70%{outline-color:#e67e22;box-shadow:0 0 0 7px rgba(230,126,34,.18)}}

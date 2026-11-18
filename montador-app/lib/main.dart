@@ -21,11 +21,18 @@ const apiBase = String.fromEnvironment(
 const vercelProtectionBypass = String.fromEnvironment(
   'VERCEL_PROTECTION_BYPASS',
 );
+Map<String, dynamic>? initialNotificationTarget;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp();
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      initialNotificationTarget = Map<String, dynamic>.from(
+        initialMessage.data,
+      );
+    }
   } catch (_) {
     // O trabalho offline permanece disponível mesmo se o push falhar.
   }
@@ -473,19 +480,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int index = 0;
   bool loading = true, syncing = false;
   String? message;
+  String? notificationTargetId;
+  final notificationTargetKey = GlobalKey();
   List<dynamic> pending = [],
       execution = [],
       pendingTransfers = [],
       transfers = [],
       received = [];
   StreamSubscription<List<ConnectivityResult>>? connectivity;
+  StreamSubscription<RemoteMessage>? notificationOpen;
+  StreamSubscription<RemoteMessage>? foregroundNotification;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadCache().then((_) => sync());
+    _loadCache().then((_) async {
+      await sync();
+      final target = initialNotificationTarget;
+      initialNotificationTarget = null;
+      if (target != null) await _openNotificationTarget(target);
+    });
     connectivity = Connectivity().onConnectivityChanged.listen((result) {
       if (!result.contains(ConnectivityResult.none)) sync();
+    });
+    notificationOpen = FirebaseMessaging.onMessageOpenedApp.listen(
+      (remote) => _openNotificationTarget(remote.data),
+    );
+    foregroundNotification = FirebaseMessaging.onMessage.listen((remote) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            remote.notification?.body ?? 'Há uma atualização no serviço.',
+          ),
+          action: SnackBarAction(
+            label: 'Abrir',
+            onPressed: () => _openNotificationTarget(remote.data),
+          ),
+        ),
+      );
     });
     _initPush();
   }
@@ -494,7 +527,42 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     connectivity?.cancel();
+    notificationOpen?.cancel();
+    foregroundNotification?.cancel();
     super.dispose();
+  }
+
+  Future<void> _openNotificationTarget(Map<String, dynamic> data) async {
+    if (data.isEmpty) return;
+    await sync();
+    final serviceId = '${data['orcamentoId'] ?? ''}';
+    final paymentId = '${data['pagamentoId'] ?? ''}';
+    int destination = 0;
+    String targetId = serviceId;
+    bool contains(List<dynamic> items, String id) =>
+        items.any((raw) => '${(raw as Map)['id']}' == id);
+    if (serviceId.isNotEmpty) {
+      if (contains(execution, serviceId)) destination = 1;
+      if (contains(pendingTransfers, serviceId)) destination = 2;
+    } else if (paymentId.isNotEmpty) {
+      targetId = paymentId;
+      destination = contains(received, paymentId) ? 4 : 3;
+    }
+    if (!mounted) return;
+    setState(() {
+      index = destination;
+      notificationTargetId = targetId;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = notificationTargetKey.currentContext;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 450),
+          alignment: 0.25,
+        );
+      }
+    });
   }
 
   @override
@@ -648,28 +716,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         services: pending,
         action: queueAction,
         pending: true,
+        targetId: notificationTargetId,
+        targetKey: notificationTargetKey,
       ),
       ServiceList(
         title: 'Pendentes de execução',
         empty: 'Nenhum serviço aguardando execução.',
         services: execution,
         action: queueAction,
+        targetId: notificationTargetId,
+        targetKey: notificationTargetKey,
       ),
       ServiceList(
         title: 'Pendentes de repasse',
         empty: 'Nenhum serviço finalizado aguardando geração de pagamento.',
         services: pendingTransfers,
         action: queueAction,
+        targetId: notificationTargetId,
+        targetKey: notificationTargetKey,
       ),
       PaymentList(
         title: 'Pagamentos gerados',
         payments: transfers,
         action: queueAction,
+        targetId: notificationTargetId,
+        targetKey: notificationTargetKey,
       ),
       PaymentList(
         title: 'Últimos 5 repasses',
         payments: received,
         received: true,
+        targetId: notificationTargetId,
+        targetKey: notificationTargetKey,
       ),
     ];
     return PopScope(
@@ -772,11 +850,15 @@ class ServiceList extends StatelessWidget {
     required this.services,
     required this.action,
     this.pending = false,
+    this.targetId,
+    this.targetKey,
   });
   final String title, empty;
   final List<dynamic> services;
   final Future<bool> Function(String, Map<String, dynamic>) action;
   final bool pending;
+  final String? targetId;
+  final GlobalKey? targetKey;
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(16),
@@ -791,6 +873,7 @@ class ServiceList extends StatelessWidget {
       if (services.isEmpty) EmptyState(text: empty),
       ...services.map(
         (item) => ServiceCard(
+          key: '${item['id']}' == targetId ? targetKey : null,
           data: Map<String, dynamic>.from(item as Map),
           action: action,
           pending: pending,
@@ -1064,11 +1147,15 @@ class PaymentList extends StatelessWidget {
     required this.payments,
     this.action,
     this.received = false,
+    this.targetId,
+    this.targetKey,
   });
   final String title;
   final List<dynamic> payments;
   final Future<bool> Function(String, Map<String, dynamic>)? action;
   final bool received;
+  final String? targetId;
+  final GlobalKey? targetKey;
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(16),
@@ -1084,7 +1171,12 @@ class PaymentList extends StatelessWidget {
         const EmptyState(text: 'Nenhum pagamento nesta situação.'),
       ...payments.map((raw) {
         final item = Map<String, dynamic>.from(raw as Map);
-        return PaymentCard(item: item, received: received, action: action);
+        return PaymentCard(
+          key: '${item['id']}' == targetId ? targetKey : null,
+          item: item,
+          received: received,
+          action: action,
+        );
       }),
     ],
   );
