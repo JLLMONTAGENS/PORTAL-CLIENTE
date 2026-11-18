@@ -2,6 +2,7 @@ const {getDatabase}=require('../_db');
 const {authenticatedUser}=require('./_auth');
 const {canManageAll}=require('./_permissions');
 const {notifyAssignment}=require('../montadores/_push');
+const money=value=>{const raw=String(value??'').trim().replace(/[^\d,.-]/g,'');const normalized=raw.includes(',')?raw.replace(/\./g,'').replace(',','.'):raw;const amount=Number(normalized);return Number.isFinite(amount)&&amount>=0?amount.toFixed(2):null};
 
 module.exports=async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({error:'Método não permitido'});
@@ -11,20 +12,25 @@ module.exports=async function handler(req,res){
     const montadorId=String(req.body?.montadorId||'').trim()||null;
     if(!atendimentoId)return res.status(400).json({error:'Atendimento não informado.'});
     const sql=getDatabase();
-    const rows=await sql`SELECT a.id,a.atendente_id,a.status,o.id AS orcamento_id,o.valor,o.valor_montador,o.modo_valor_montador,o.montador_id,o.numero_atendimento,o.descricao_servico,o.bairro,o.cidade,o.agendado_para FROM atendimentos a LEFT JOIN orcamentos o ON o.atendimento_id=a.id WHERE a.id=${atendimentoId} LIMIT 1`;
+    const rows=await sql`SELECT a.id,a.atendente_id,a.status,o.id AS orcamento_id,o.valor,o.valor_montador,o.modo_valor_montador,o.montador_id,o.numero_atendimento,o.descricao_servico,o.bairro,o.cidade,o.agendado_para,o.aceito_cliente_em,o.status_orcamento FROM atendimentos a LEFT JOIN orcamentos o ON o.atendimento_id=a.id WHERE a.id=${atendimentoId} LIMIT 1`;
     const atendimento=rows[0];
     if(!atendimento)return res.status(404).json({error:'Atendimento não encontrado.'});
     if(['SERVICO_FINALIZADO','CANCELADO'].includes(atendimento.status))return res.status(409).json({error:'O atendimento já foi encerrado.'});
     if(!canManageAll(user)&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode atribuir o montador.'});
     if(!atendimento.orcamento_id)return res.status(409).json({error:'Gere o orçamento antes de atribuir o montador.'});
+    if(atendimento.status_orcamento==='CANCELADO')return res.status(409).json({error:'O orçamento foi cancelado. Gere um novo orçamento antes de atribuir o montador.'});
+    if(montadorId&&!atendimento.aceito_cliente_em)return res.status(409).json({error:'Aguarde o aceite do cliente antes de atribuir um montador.'});
     let percentual=0;
     if(montadorId){
       const montadores=await sql`SELECT id,percentual_repasse FROM montadores WHERE id=${montadorId} AND ativo=TRUE LIMIT 1`;
       if(!montadores[0])return res.status(400).json({error:'Montador inválido ou inativo.'});
       percentual=Number(montadores[0].percentual_repasse??60);
     }
-    const modoValorMontador=!montadorId?'PERCENTUAL':atendimento.modo_valor_montador==='VALOR'?'VALOR':'PERCENTUAL';
-    const valorMontador=!montadorId?'0.00':modoValorMontador==='VALOR'?Number(atendimento.valor_montador||0).toFixed(2):(Number(atendimento.valor||0)*percentual/100).toFixed(2);
+    const modoSolicitado=String(req.body?.modoValorMontador||'PERCENTUAL').toUpperCase();
+    const modoValorMontador=!montadorId?'PERCENTUAL':modoSolicitado==='VALOR'?'VALOR':'PERCENTUAL';
+    const valorInformado=money(req.body?.valorMontadorInformado);
+    if(montadorId&&modoValorMontador==='VALOR'&&valorInformado===null)return res.status(400).json({error:'Informe corretamente o valor destinado ao montador.'});
+    const valorMontador=!montadorId?'0.00':modoValorMontador==='VALOR'?valorInformado:(Number(atendimento.valor||0)*percentual/100).toFixed(2);
     const percentualAplicado=montadorId&&modoValorMontador==='PERCENTUAL'?percentual:null;
     const statusOrcamento=montadorId?'MONTADOR_ATRIBUIDO':'GERADO';
     const statusAtendimento=montadorId?'ATRIBUIDO_MONTADOR':'GEROU_ORCAMENTO';

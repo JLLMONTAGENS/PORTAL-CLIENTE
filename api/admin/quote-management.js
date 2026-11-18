@@ -16,11 +16,15 @@ module.exports=async function handler(req,res){
     const sql=getDatabase(),existing=await sql`SELECT o.*,a.atendente_id FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id WHERE o.id=${id} LIMIT 1`;
     if(!existing[0])return res.status(404).json({error:'Orçamento não encontrado.'});
     if(existing[0].status_orcamento==='CANCELADO')return res.status(409).json({error:'Orçamentos cancelados são somente para consulta.'});
+    if(montadorId&&!existing[0].aceito_cliente_em)return res.status(409).json({error:'Aguarde o aceite do cliente antes de atribuir um montador.'});
     if(existing[0].status_pag_cliente==='PAGO'&&statusPagCliente==='PENDENTE')return res.status(409).json({error:'Um pagamento confirmado não pode voltar para pendente.'});
     if(statusPgMontador==='PAGO'&&!montadorId)return res.status(400).json({error:'Atribua um montador antes de registrar o pagamento.'});
     let percentual=0;if(montadorId){const montadores=await sql`SELECT id,percentual_repasse FROM montadores WHERE id=${montadorId} AND ativo=TRUE LIMIT 1`;if(!montadores[0])return res.status(400).json({error:'Montador inválido ou inativo.'});percentual=Number(montadores[0].percentual_repasse??60)}
-    const modoValorMontador=!montadorId?'PERCENTUAL':existing[0].modo_valor_montador==='VALOR'?'VALOR':'PERCENTUAL';
-    const valorMontador=!montadorId?'0.00':modoValorMontador==='VALOR'?Number(existing[0].valor_montador||0).toFixed(2):(Number(existing[0].valor)*percentual/100).toFixed(2);
+    const modoSolicitado=String(req.body?.modoValorMontador||existing[0].modo_valor_montador||'PERCENTUAL').toUpperCase();
+    const modoValorMontador=!montadorId?'PERCENTUAL':modoSolicitado==='VALOR'?'VALOR':'PERCENTUAL';
+    const valorInformado=money(req.body?.valorMontadorInformado??existing[0].valor_montador);
+    if(montadorId&&modoValorMontador==='VALOR'&&valorInformado===null)return res.status(400).json({error:'Informe corretamente o valor destinado ao montador.'});
+    const valorMontador=!montadorId?'0.00':modoValorMontador==='VALOR'?valorInformado:(Number(existing[0].valor)*percentual/100).toFixed(2);
     const percentualAplicado=montadorId&&modoValorMontador==='PERCENTUAL'?percentual:null;
     const totalMontador=(Number(valorMontador)+Number(adicionalMontador)).toFixed(2);
     if(statusPgMontador==='PAGO'&&existing[0].status_pg_montador!=='PAGO'){

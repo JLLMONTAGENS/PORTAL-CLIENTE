@@ -14,6 +14,7 @@ module.exports=async function handler(req,res){
     const orcamentos=await sql`SELECT o.*,m.nome AS montador_nome FROM orcamentos o LEFT JOIN montadores m ON m.id=o.montador_id WHERE o.atendimento_id=${id} LIMIT 1`;
     const fotosServico=await sql`SELECT id,nome_arquivo AS "nomeArquivo",tipo_mime AS "tipoMime",capturado_em AS "capturadoEm",criado_em AS "criadoEm" FROM fotos_servico_montador WHERE atendimento_id=${id} ORDER BY criado_em`;
     const atendimento=rows[0],quote=orcamentos[0]||null,active=!['SERVICO_FINALIZADO','CANCELADO'].includes(atendimento.status),owner=atendimento.atendente_id===user.id||unrestricted;
-    return res.status(200).json({atendimento,mensagens,orcamento:quote,fotosServico,permissoes:{podeResponder:owner&&active,podeTransferir:owner&&active,podeGerarOrcamento:owner&&active,podeFinalizar:owner&&active&&Boolean(quote),podeCancelar:owner&&active}});
+    const quoteActive=Boolean(quote&&quote.status_orcamento!=='CANCELADO');
+    return res.status(200).json({atendimento,mensagens,orcamento:quote,fotosServico,permissoes:{podeResponder:owner&&active,podeTransferir:owner&&active,podeGerarOrcamento:owner&&active,podeFinalizar:owner&&active&&quoteActive,podeCancelar:owner&&active,podeAtribuirMontador:owner&&active&&quoteActive&&Boolean(quote.aceito_cliente_em),podeCancelarOrcamento:owner&&active&&quoteActive}});
   }catch(error){console.error(error);return res.status(500).json({error:'Não foi possível abrir a conversa.'})}
 };

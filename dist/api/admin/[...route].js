@@ -31,6 +31,7 @@ const handlers={
   'assign-assembler':()=>require('../../../api/admin/assign-assembler'),
   finalize:()=>require('../../../api/admin/finalize'),
   cancel:()=>require('../../../api/admin/cancel'),
+  'cancel-quote':()=>require('../../../api/admin/cancel-quote'),
   'montador-cadastros':()=>require('../../../api/admin/montador-cadastros'),
   'montador-documento':()=>require('../../../api/admin/montador-documento'),
   'montador-documento-revisao':()=>require('../../../api/admin/montador-documento-revisao'),
