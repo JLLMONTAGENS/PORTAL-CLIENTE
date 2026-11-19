@@ -15,6 +15,7 @@ const handlers={
   status:require('../../../api/montadores/status'),
   servicos:require('../../../api/montadores/servicos'),
   'servico-foto':require('../../../api/montadores/servico-foto'),
+  'orcamento-imagem':require('../../../api/montadores/orcamento-imagem'),
   pagamentos:require('../../../api/montadores/pagamentos'),
   'pagamento-documento':require('../../../api/montadores/pagamento-documento'),
   dispositivo:require('../../../api/montadores/dispositivo')

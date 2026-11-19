@@ -122,6 +122,25 @@ class ApiClient {
   static const secure = FlutterSecureStorage();
   String? cookie;
   bool keepConnected = false;
+  Map<String, String> get mediaHeaders => {
+    'X-JLL-App': 'montador-mobile',
+    'Cookie': ?cookie,
+    if (vercelProtectionBypass.isNotEmpty)
+      'x-vercel-protection-bypass': vercelProtectionBypass,
+  };
+  String mediaUrl(String route) {
+    var uri = Uri.parse('$apiBase$route');
+    if (vercelProtectionBypass.isNotEmpty) {
+      uri = uri.replace(
+        queryParameters: {
+          ...uri.queryParameters,
+          'x-vercel-protection-bypass': vercelProtectionBypass,
+        },
+      );
+    }
+    return uri.toString();
+  }
+
   Future<bool> restore() async {
     keepConnected = await secure.read(key: 'keep_connected') == 'true';
     if (!keepConnected) {
@@ -715,6 +734,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         empty: 'Nenhuma proposta aguardando sua decisão.',
         services: pending,
         action: queueAction,
+        api: widget.api,
         pending: true,
         targetId: notificationTargetId,
         targetKey: notificationTargetKey,
@@ -724,6 +744,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         empty: 'Nenhum serviço aguardando execução.',
         services: execution,
         action: queueAction,
+        api: widget.api,
         targetId: notificationTargetId,
         targetKey: notificationTargetKey,
       ),
@@ -732,6 +753,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         empty: 'Nenhum serviço finalizado aguardando geração de pagamento.',
         services: pendingTransfers,
         action: queueAction,
+        api: widget.api,
         targetId: notificationTargetId,
         targetKey: notificationTargetKey,
       ),
@@ -849,6 +871,7 @@ class ServiceList extends StatelessWidget {
     required this.empty,
     required this.services,
     required this.action,
+    required this.api,
     this.pending = false,
     this.targetId,
     this.targetKey,
@@ -856,6 +879,7 @@ class ServiceList extends StatelessWidget {
   final String title, empty;
   final List<dynamic> services;
   final Future<bool> Function(String, Map<String, dynamic>) action;
+  final ApiClient api;
   final bool pending;
   final String? targetId;
   final GlobalKey? targetKey;
@@ -876,6 +900,7 @@ class ServiceList extends StatelessWidget {
           key: '${item['id']}' == targetId ? targetKey : null,
           data: Map<String, dynamic>.from(item as Map),
           action: action,
+          api: api,
           pending: pending,
         ),
       ),
@@ -888,10 +913,12 @@ class ServiceCard extends StatefulWidget {
     super.key,
     required this.data,
     required this.action,
+    required this.api,
     required this.pending,
   });
   final Map<String, dynamic> data;
   final Future<bool> Function(String, Map<String, dynamic>) action;
+  final ApiClient api;
   final bool pending;
   @override
   State<ServiceCard> createState() => _ServiceCardState();
@@ -969,9 +996,130 @@ class _ServiceCardState extends State<ServiceCard> {
     }
   }
 
+  Widget quoteImages(BuildContext context, List<dynamic> images) {
+    if (images.isEmpty) return const SizedBox.shrink();
+    Widget imageFor(Map<String, dynamic> image, {BoxFit fit = BoxFit.cover}) {
+      final url = widget.api.mediaUrl(
+        '/api/montadores/orcamento-imagem?id=${Uri.encodeQueryComponent('${image['id']}')}',
+      );
+      return Image.network(
+        url,
+        headers: widget.api.mediaHeaders,
+        fit: fit,
+        errorBuilder: (_, _, _) => const Center(
+          child: Icon(Icons.broken_image_outlined, color: Colors.blueGrey),
+        ),
+        loadingBuilder: (_, child, progress) => progress == null
+            ? child
+            : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 14, bottom: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7EF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1D2B2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'IMAGENS PARA ORIENTAR A MONTAGEM',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF9A5417),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Confira na ordem indicada antes de aceitar o serviço.',
+            style: TextStyle(color: Colors.blueGrey),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 132,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: images.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 9),
+              itemBuilder: (context, index) {
+                final image = Map<String, dynamic>.from(images[index] as Map);
+                return InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => Dialog(
+                      insetPadding: const EdgeInsets.all(16),
+                      child: Stack(
+                        children: [
+                          SizedBox(
+                            width: double.maxFinite,
+                            height: MediaQuery.of(context).size.height * .72,
+                            child: InteractiveViewer(
+                              minScale: .8,
+                              maxScale: 4,
+                              child: imageFor(image, fit: BoxFit.contain),
+                            ),
+                          ),
+                          Positioned(
+                            right: 6,
+                            top: 6,
+                            child: IconButton.filled(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          width: 126,
+                          height: 126,
+                          child: imageFor(image),
+                        ),
+                      ),
+                      Positioned(
+                        left: 7,
+                        top: 7,
+                        child: CircleAvatar(
+                          radius: 14,
+                          backgroundColor: const Color(0xFFE67E22),
+                          foregroundColor: Colors.white,
+                          child: Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final d = widget.data, accepted = d['nomeCliente'] != null;
+    final d = widget.data,
+        accepted = d['nomeCliente'] != null,
+        images = d['imagensOrcamento'] as List? ?? const [];
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1020,6 +1168,7 @@ class _ServiceCardState extends State<ServiceCard> {
               icon: Icons.payments_outlined,
               text: formatMoney(d['valorRepasse']),
             ),
+            quoteImages(context, images),
             if (accepted) ...[
               const Divider(),
               InfoRow(icon: Icons.person_outline, text: '${d['nomeCliente']}'),

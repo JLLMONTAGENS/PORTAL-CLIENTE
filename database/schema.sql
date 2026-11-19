@@ -118,6 +118,20 @@ CREATE TABLE IF NOT EXISTS orcamentos (
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS orcamento_imagens_cliente (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  orcamento_id UUID NOT NULL REFERENCES orcamentos(id) ON DELETE CASCADE,
+  anexo_mensagem_id UUID NOT NULL REFERENCES anexos_mensagem(id) ON DELETE CASCADE,
+  ordem INTEGER NOT NULL CHECK (ordem > 0),
+  selecionado_por UUID NOT NULL REFERENCES usuarios_atendimento(id),
+  criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (orcamento_id, anexo_mensagem_id),
+  UNIQUE (orcamento_id, ordem)
+);
+
+CREATE INDEX IF NOT EXISTS orcamento_imagens_cliente_orcamento_idx
+  ON orcamento_imagens_cliente (orcamento_id, ordem);
+
 CREATE INDEX IF NOT EXISTS orcamentos_agendamento_idx
   ON orcamentos (agendado_para ASC);
 

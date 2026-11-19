@@ -12,7 +12,8 @@ module.exports=async function handler(req,res){
       SELECT o.*,m.nome AS montador_nome,m.percentual_repasse,pmi.pagamento_id,
              gerador.nome_exibicao AS gerado_por_nome,a.atendente_id,a.status AS atendimento_status,
              atendente.nome_exibicao AS atendente_nome,(pmi.pagamento_id IS NOT NULL) AS pagamento_gerado,
-             COALESCE((SELECT json_agg(json_build_object('id',f.id,'nomeArquivo',f.nome_arquivo,'tipoMime',f.tipo_mime,'capturadoEm',f.capturado_em,'criadoEm',f.criado_em) ORDER BY f.criado_em) FROM fotos_servico_montador f WHERE f.orcamento_id=o.id),'[]'::json) AS fotos_servico
+             COALESCE((SELECT json_agg(json_build_object('id',f.id,'nomeArquivo',f.nome_arquivo,'tipoMime',f.tipo_mime,'capturadoEm',f.capturado_em,'criadoEm',f.criado_em) ORDER BY f.criado_em) FROM fotos_servico_montador f WHERE f.orcamento_id=o.id),'[]'::json) AS fotos_servico,
+             COALESCE((SELECT json_agg(json_build_object('id',oi.id,'anexoId',oi.anexo_mensagem_id,'mensagemId',am.mensagem_id,'nomeArquivo',am.nome_arquivo,'tipoMime',am.tipo_mime,'ordem',oi.ordem) ORDER BY oi.ordem) FROM orcamento_imagens_cliente oi JOIN anexos_mensagem am ON am.id=oi.anexo_mensagem_id WHERE oi.orcamento_id=o.id),'[]'::json) AS imagens_cliente
       FROM orcamentos o
       JOIN atendimentos a ON a.id=o.atendimento_id
       LEFT JOIN montadores m ON m.id=o.montador_id

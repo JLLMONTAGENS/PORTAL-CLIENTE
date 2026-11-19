@@ -24,7 +24,7 @@ try {
   & flutter build apk --release "--dart-define=API_BASE_URL=$($ApiBase.TrimEnd('/'))"
   if ($LASTEXITCODE -ne 0) { throw 'A compilacao do APK falhou.' }
   $release = Join-Path $PSScriptRoot 'release'; New-Item -ItemType Directory -Path $release -Force | Out-Null
-  Copy-Item 'build\app\outputs\bundle\release\app-release.aab' (Join-Path $release 'JLL-Montador-1.0.8+9.aab') -Force
-  Copy-Item 'build\app\outputs\flutter-apk\app-release.apk' (Join-Path $release 'JLL-Montador-1.0.8+9.apk') -Force
+  Copy-Item 'build\app\outputs\bundle\release\app-release.aab' (Join-Path $release 'JLL-Montador-1.0.9+10.aab') -Force
+  Copy-Item 'build\app\outputs\flutter-apk\app-release.apk' (Join-Path $release 'JLL-Montador-1.0.9+10.apk') -Force
   Write-Host "Producao criada em $release" -ForegroundColor Green
 } finally { Pop-Location }
