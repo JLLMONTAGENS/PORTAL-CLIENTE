@@ -1,4 +1,4 @@
-const { put } = require('@vercel/blob');
+const { put } = global.__JLL_VERCEL_BLOB || require('@vercel/blob');
 const { getDatabase } = require('../_db');
 
 const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
