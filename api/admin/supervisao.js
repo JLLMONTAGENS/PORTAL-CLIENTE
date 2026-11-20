@@ -16,11 +16,11 @@ module.exports=async function handler(req,res){
       return res.status(200).json({atendimento:rows[0],mensagens});
     }
     if(req.method==='GET'&&req.query?.usuarioId){
-      const id=String(req.query.usuarioId),rows=await sql`SELECT a.id,a.numero_atendimento,a.nome_cliente,a.telefone,a.status,a.atualizado_em FROM atendimentos a WHERE a.atendente_id=${id} AND a.status NOT IN ('SERVICO_FINALIZADO','CANCELADO') ORDER BY a.atualizado_em DESC`;
+      const id=String(req.query.usuarioId),rows=await sql`SELECT a.id,a.numero_atendimento,a.nome_cliente,a.telefone,a.status,a.atualizado_em FROM atendimentos a WHERE a.atendente_id=${id} AND a.status NOT IN ('ATENDIMENTO_FINALIZADO','CANCELADO') ORDER BY a.atualizado_em DESC`;
       return res.status(200).json({atendimentos:rows});
     }
     if(req.method==='GET'){
-      const rows=await sql`SELECT u.id,u.nome_exibicao,u.login,u.perfil,COALESCE(p.origem,'WEB') AS origem,p.ultima_atividade_em,(p.ultima_atividade_em>NOW()-INTERVAL '90 seconds') AS online,COUNT(a.id)::int AS atendimentos_ativos FROM usuarios_atendimento u LEFT JOIN usuarios_presenca p ON p.usuario_id=u.id LEFT JOIN atendimentos a ON a.atendente_id=u.id AND a.status NOT IN ('SERVICO_FINALIZADO','CANCELADO') WHERE u.ativo=TRUE GROUP BY u.id,p.origem,p.ultima_atividade_em ORDER BY online DESC,u.nome_exibicao`;
+      const rows=await sql`SELECT u.id,u.nome_exibicao,u.login,u.perfil,COALESCE(p.origem,'WEB') AS origem,p.ultima_atividade_em,(p.ultima_atividade_em>NOW()-INTERVAL '90 seconds') AS online,COUNT(a.id)::int AS atendimentos_ativos FROM usuarios_atendimento u LEFT JOIN usuarios_presenca p ON p.usuario_id=u.id LEFT JOIN atendimentos a ON a.atendente_id=u.id AND a.status NOT IN ('ATENDIMENTO_FINALIZADO','CANCELADO') WHERE u.ativo=TRUE GROUP BY u.id,p.origem,p.ultima_atividade_em ORDER BY online DESC,u.nome_exibicao`;
       return res.status(200).json({usuarios:rows});
     }
     if(req.method==='POST'){
@@ -28,7 +28,7 @@ module.exports=async function handler(req,res){
       if(!atendimentoId||!texto)return res.status(400).json({error:'Mensagem vazia.'});
       const allowed=(await sql`SELECT id,status FROM atendimentos WHERE id=${atendimentoId} LIMIT 1`)[0];
       if(!allowed)return res.status(404).json({error:'Atendimento não encontrado.'});
-      if(['SERVICO_FINALIZADO','CANCELADO'].includes(allowed.status))return res.status(409).json({error:'Atendimento encerrado.'});
+      if(['ATENDIMENTO_FINALIZADO','CANCELADO'].includes(allowed.status))return res.status(409).json({error:'Atendimento encerrado.'});
       const message=(await sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,remetente_id,texto) VALUES (${atendimentoId},'ATENDENTE',${user.id},${texto}) RETURNING id,tipo_remetente,remetente_id,texto,criado_em`)[0];
       await sql`UPDATE atendimentos SET atualizado_em=NOW() WHERE id=${atendimentoId}`;
       return res.status(201).json({mensagem:message});

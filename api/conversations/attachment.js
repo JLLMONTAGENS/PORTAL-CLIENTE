@@ -8,7 +8,7 @@ module.exports = async function handler(req, res) {
   if (!conversationId || !messageId) return res.status(400).end('Parâmetros inválidos');
   try {
     const sql = getDatabase();
-    const rows = await sql`SELECT a.url_armazenamento, a.tipo_mime, a.nome_arquivo FROM anexos_mensagem a JOIN mensagens m ON m.id = a.mensagem_id WHERE a.mensagem_id = ${messageId} AND m.atendimento_id = ${conversationId} LIMIT 1`;
+    const rows = await sql`SELECT a.url_armazenamento, a.tipo_mime, a.nome_arquivo FROM anexos_mensagem a JOIN mensagens m ON m.id = a.mensagem_id WHERE a.mensagem_id = ${messageId} AND m.atendimento_id = ${conversationId} AND m.visivel_cliente=TRUE LIMIT 1`;
     if (!rows[0]) return res.status(404).end('Anexo não encontrado');
     const blob = await get(rows[0].url_armazenamento, { access: 'private' });
     if (!blob || blob.statusCode !== 200) return res.status(404).end('Anexo não encontrado');

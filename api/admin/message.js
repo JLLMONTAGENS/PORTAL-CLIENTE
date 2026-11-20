@@ -12,7 +12,7 @@ module.exports=async function handler(req,res){
     const sql=getDatabase();
     const allowed=await sql`SELECT id,atendente_id,status FROM atendimentos WHERE id=${atendimentoId} LIMIT 1`;
     if(!allowed[0])return res.status(404).json({error:'Atendimento não encontrado.'});
-    if(['SERVICO_FINALIZADO','CANCELADO'].includes(allowed[0].status))return res.status(409).json({error:'Atendimentos encerrados não aceitam novas mensagens.'});
+    if(['ATENDIMENTO_FINALIZADO','CANCELADO'].includes(allowed[0].status))return res.status(409).json({error:'Atendimentos encerrados não aceitam novas mensagens.'});
     if(allowed[0].atendente_id!==user.id&&!canManageAll(user))return res.status(409).json({error:'Assuma ou receba este atendimento antes de responder.'});
     const rows=await sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,remetente_id,texto) VALUES (${atendimentoId},'ATENDENTE',${user.id},${String(texto).trim()}) RETURNING id,tipo_remetente,remetente_id,texto,criado_em`;
     await sql`UPDATE atendimentos SET atualizado_em=NOW() WHERE id=${atendimentoId}`;

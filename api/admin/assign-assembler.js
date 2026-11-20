@@ -15,7 +15,7 @@ module.exports=async function handler(req,res){
     const rows=await sql`SELECT a.id,a.atendente_id,a.status,o.id AS orcamento_id,o.valor,o.valor_montador,o.modo_valor_montador,o.montador_id,o.numero_atendimento,o.descricao_servico,o.bairro,o.cidade,o.agendado_para,o.aceito_cliente_em,o.status_orcamento FROM atendimentos a LEFT JOIN orcamentos o ON o.atendimento_id=a.id WHERE a.id=${atendimentoId} LIMIT 1`;
     const atendimento=rows[0];
     if(!atendimento)return res.status(404).json({error:'Atendimento não encontrado.'});
-    if(['SERVICO_FINALIZADO','CANCELADO'].includes(atendimento.status))return res.status(409).json({error:'O atendimento já foi encerrado.'});
+    if(['ATENDIMENTO_FINALIZADO','CANCELADO'].includes(atendimento.status))return res.status(409).json({error:'O atendimento já foi encerrado.'});
     if(!canManageAll(user)&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode atribuir o montador.'});
     if(!atendimento.orcamento_id)return res.status(409).json({error:'Gere o orçamento antes de atribuir o montador.'});
     if(atendimento.status_orcamento==='CANCELADO')return res.status(409).json({error:'O orçamento foi cancelado. Gere um novo orçamento antes de atribuir o montador.'});

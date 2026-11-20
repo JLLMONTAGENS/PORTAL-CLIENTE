@@ -11,7 +11,7 @@ module.exports=async function handler(req,res){
     const quote=rows[0];
     if(!quote)return res.status(404).json({error:'Orçamento não encontrado para este atendimento.'});
     if(quote.status_orcamento==='CANCELADO'||quote.atendimento_status==='CANCELADO')return res.status(409).json({error:'Este orçamento foi cancelado e não pode ser aceito.'});
-    if(quote.status_orcamento==='FINALIZADO'||quote.atendimento_status==='SERVICO_FINALIZADO')return res.status(409).json({error:'Este atendimento já foi finalizado.'});
+    if(quote.status_orcamento==='FINALIZADO'||quote.atendimento_status==='ATENDIMENTO_FINALIZADO')return res.status(409).json({error:'Este atendimento já foi finalizado.'});
     if(quote.aceito_cliente_em)return res.status(200).json({ok:true,alreadyAccepted:true,acceptedAt:quote.aceito_cliente_em});
     const updated=(await sql`UPDATE orcamentos SET aceito_cliente_em=NOW(),atualizado_em=NOW() WHERE id=${quote.id} AND aceito_cliente_em IS NULL RETURNING aceito_cliente_em`)[0];
     if(!updated){

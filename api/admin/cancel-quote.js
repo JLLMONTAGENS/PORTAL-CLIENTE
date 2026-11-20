@@ -11,7 +11,7 @@ module.exports=async function handler(req,res){
     const quote=(await sql`SELECT o.*,a.atendente_id,a.status AS atendimento_status,EXISTS(SELECT 1 FROM pagamentos_montador_itens i WHERE i.orcamento_id=o.id) AS possui_repasse FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id WHERE o.atendimento_id=${atendimentoId} LIMIT 1`)[0];
     if(!quote)return res.status(404).json({error:'Orçamento não encontrado.'});
     if(!canManageAll(user)&&quote.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável, gestor ou administrador pode cancelar o orçamento.'});
-    if(['SERVICO_FINALIZADO','CANCELADO'].includes(quote.atendimento_status))return res.status(409).json({error:'O atendimento já foi encerrado.'});
+    if(['ATENDIMENTO_FINALIZADO','CANCELADO'].includes(quote.atendimento_status))return res.status(409).json({error:'O atendimento já foi encerrado.'});
     if(quote.status_orcamento==='CANCELADO')return res.status(409).json({error:'Este orçamento já foi cancelado.'});
     if(quote.status_orcamento==='FINALIZADO'||quote.status_pag_cliente==='PAGO')return res.status(409).json({error:'Um orçamento com pagamento confirmado não pode ser cancelado.'});
     if(quote.possui_repasse||quote.status_pg_montador==='PAGO')return res.status(409).json({error:'Este orçamento já está vinculado a um pagamento de montador.'});

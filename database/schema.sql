@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS atendimentos (
   numero_atendimento BIGSERIAL UNIQUE,
   nome_cliente TEXT NOT NULL,
   telefone TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'GEROU_ORCAMENTO', 'ATRIBUIDO_MONTADOR', 'SERVICO_FINALIZADO', 'CANCELADO')),
+  status TEXT NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'GEROU_ORCAMENTO', 'ATRIBUIDO_MONTADOR', 'SERVICO_FINALIZADO', 'ATENDIMENTO_FINALIZADO', 'CANCELADO')),
   montador_id UUID REFERENCES montadores(id),
   atendente_id UUID REFERENCES usuarios_atendimento(id),
   detalhes_servico TEXT,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS atendimentos (
 
 CREATE UNIQUE INDEX IF NOT EXISTS atendimentos_um_aberto_por_telefone
   ON atendimentos (telefone)
-  WHERE status NOT IN ('SERVICO_FINALIZADO', 'CANCELADO');
+  WHERE status NOT IN ('ATENDIMENTO_FINALIZADO', 'CANCELADO');
 
 CREATE INDEX IF NOT EXISTS atendimentos_status_atualizado_idx
   ON atendimentos (status, atualizado_em DESC);
@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS mensagens (
   tipo_remetente TEXT NOT NULL CHECK (tipo_remetente IN ('CLIENTE', 'ATENDENTE', 'SISTEMA')),
   remetente_id UUID,
   texto TEXT,
+  visivel_cliente BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CHECK (texto IS NOT NULL OR tipo_remetente = 'SISTEMA')
 );

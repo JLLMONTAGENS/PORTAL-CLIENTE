@@ -19,7 +19,7 @@ module.exports=async function handler(req,res){
     const atendimentoId=String(req.body?.atendimentoId||'').trim();
     const mimeType=String(req.body?.mimeType||'').toLowerCase();
     const fileName=String(req.body?.fileName||'anexo').replace(/[^a-zA-Z0-9._-]/g,'-').slice(0,120);
-    const encoded=String(req.body?.data||'');
+    const encoded=String(req.body?.data||''),usoInterno=req.body?.usoInterno===true;
     if(!atendimentoId||!allowedTypes.has(mimeType)||!encoded)return res.status(400).json({error:'Selecione uma imagem ou um arquivo PDF válido.'});
     const fileBuffer=Buffer.from(encoded,'base64');
     const maxBytes=3*1024*1024;
@@ -27,11 +27,11 @@ module.exports=async function handler(req,res){
     if(!hasValidSignature(fileBuffer,mimeType))return res.status(400).json({error:'O conteúdo do arquivo não corresponde ao formato informado.'});
     const sql=getDatabase();
     const allowed=await sql`SELECT id,atendente_id,status FROM atendimentos WHERE id=${atendimentoId} LIMIT 1`;
-    if(!allowed[0]||['SERVICO_FINALIZADO','CANCELADO'].includes(allowed[0].status))return res.status(404).json({error:'Atendimento não encontrado ou encerrado.'});
+    if(!allowed[0]||['ATENDIMENTO_FINALIZADO','CANCELADO'].includes(allowed[0].status))return res.status(404).json({error:'Atendimento não encontrado ou encerrado.'});
     if(allowed[0].atendente_id!==user.id&&!canManageAll(user))return res.status(409).json({error:'Assuma ou receba este atendimento antes de enviar anexos.'});
     const blob=await put(`atendimentos/${atendimentoId}/${Date.now()}-${fileName}`,fileBuffer,{access:'private',contentType:mimeType,addRandomSuffix:true});
-    const label=mimeType==='application/pdf'?`Documento enviado: ${fileName}`:'Imagem enviada';
-    const messages=await sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,remetente_id,texto) VALUES (${atendimentoId},'ATENDENTE',${user.id},${label}) RETURNING id,tipo_remetente,remetente_id,texto,criado_em`;
+    const label=usoInterno?'Imagem interna adicionada ao orçamento':mimeType==='application/pdf'?`Documento enviado: ${fileName}`:'Imagem enviada';
+    const messages=await sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,remetente_id,texto,visivel_cliente) VALUES (${atendimentoId},'ATENDENTE',${user.id},${label},${!usoInterno}) RETURNING id,tipo_remetente,remetente_id,texto,criado_em`;
     const message=messages[0];
     const attachments=await sql`INSERT INTO anexos_mensagem (mensagem_id,url_armazenamento,nome_arquivo,tipo_mime,tamanho_bytes) VALUES (${message.id},${blob.url},${fileName},${mimeType},${fileBuffer.length}) RETURNING id`;
     await sql`UPDATE atendimentos SET atualizado_em=NOW() WHERE id=${atendimentoId}`;

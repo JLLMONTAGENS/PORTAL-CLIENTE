@@ -35,12 +35,12 @@ module.exports=async function handler(req,res){
     const rows=await sql`SELECT o.*,a.atendente_id,a.status AS atendimento_status FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id WHERE o.id=${quoteId} LIMIT 1`,quote=rows[0];if(!quote)return res.status(404).json({error:'Orçamento não encontrado.'});
     if(!canManageAll(user)&&quote.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável pelo atendimento pode gerar o link.'});
     if(quote.status_orcamento==='CANCELADO'||quote.atendimento_status==='CANCELADO')return res.status(409).json({error:'Não é possível gerar pagamento para um atendimento cancelado.'});
-    if(quote.status_orcamento==='FINALIZADO'||quote.atendimento_status==='SERVICO_FINALIZADO')return res.status(409).json({error:'Este atendimento já foi finalizado.'});
+    if(quote.status_orcamento==='FINALIZADO'||quote.atendimento_status==='ATENDIMENTO_FINALIZADO')return res.status(409).json({error:'Este orçamento já foi pago ou o atendimento foi finalizado.'});
     if(quote.status_pag_cliente==='PAGO')return res.status(409).json({error:'Este orçamento já está pago.'});
     const config=await configuredProvider(provider);if(!config)return res.status(409).json({error:'Ative e configure esse provedor no menu Pagamentos.'});
     const payment=provider==='MERCADO_PAGO'?await mercadoPago(config,quote):await pagBank(config,quote);
     await sql`UPDATE orcamentos SET provedor_pagamento=${provider},id_pagamento_externo=${payment.id},link_pagamento=${payment.url},atualizado_em=NOW() WHERE id=${quote.id}`;
-    const message=`Link seguro para pagamento do orçamento #${quote.numero_atendimento}:\n${payment.url}\n\nApós a confirmação do pagamento, o atendimento será finalizado automaticamente.`;
+    const message=`Link seguro para pagamento do orçamento #${quote.numero_atendimento}:\n${payment.url}\n\nApós a confirmação, o pagamento será registrado e o atendimento continuará aberto até a conclusão pela equipe JLL.`;
     await sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,remetente_id,texto) VALUES (${quote.atendimento_id},'ATENDENTE',${user.id},${message})`;
     await sql`UPDATE atendimentos SET atualizado_em=NOW() WHERE id=${quote.atendimento_id}`;
     await sql`INSERT INTO eventos_atendimento (atendimento_id,tipo_evento,detalhes) VALUES (${quote.atendimento_id},'LINK_PAGAMENTO_GERADO',${JSON.stringify({orcamentoId:quote.id,provedor:provider,idPagamentoExterno:payment.id,usuario:user.id})}::jsonb)`;

@@ -10,7 +10,7 @@ module.exports=async function handler(req,res){
     if(!atendimentoId)return res.status(400).json({error:'Atendimento não informado.'});
     const rows=await sql`SELECT id,numero_atendimento,atendente_id,status FROM atendimentos WHERE id=${atendimentoId} LIMIT 1`,atendimento=rows[0];
     if(!atendimento)return res.status(404).json({error:'Atendimento não encontrado.'});
-    if(atendimento.status==='SERVICO_FINALIZADO')return res.status(409).json({error:'Atendimentos finalizados não podem ser cancelados.'});
+    if(atendimento.status==='ATENDIMENTO_FINALIZADO')return res.status(409).json({error:'Atendimentos finalizados não podem ser cancelados.'});
     if(atendimento.status==='CANCELADO')return res.status(409).json({error:'Este atendimento já foi cancelado.'});
     if(!canManageAll(user)&&atendimento.atendente_id!==user.id)return res.status(403).json({error:'Somente o responsável, gestor ou administrador pode cancelar o atendimento.'});
     const existingQuotes=await sql`SELECT o.id,o.status_orcamento,o.status_pag_cliente,o.status_pg_montador,EXISTS(SELECT 1 FROM pagamentos_montador_itens i WHERE i.orcamento_id=o.id) AS possui_repasse FROM orcamentos o WHERE o.atendimento_id=${atendimentoId} LIMIT 1`,existingQuote=existingQuotes[0]||null;
@@ -20,7 +20,7 @@ module.exports=async function handler(req,res){
     const message='Atendimento cancelado. Se precisar solicitar um novo serviço, a equipe JLL Montagens permanece à disposição.';
     const operations=[];
     if(existingQuote)operations.push(sql`UPDATE orcamentos SET status_orcamento='CANCELADO',link_pagamento=NULL,id_pagamento_externo=NULL,status_execucao_montador=NULL,atribuicao_versao=NULL,montador_id=NULL,atualizado_em=NOW() WHERE id=${existingQuote.id} AND status_orcamento NOT IN ('FINALIZADO','CANCELADO') RETURNING id`);
-    operations.push(sql`UPDATE atendimentos SET status='CANCELADO',montador_id=NULL,encerrado_em=COALESCE(encerrado_em,NOW()),atualizado_em=NOW() WHERE id=${atendimentoId} AND status NOT IN ('SERVICO_FINALIZADO','CANCELADO') RETURNING id`);
+    operations.push(sql`UPDATE atendimentos SET status='CANCELADO',montador_id=NULL,encerrado_em=COALESCE(encerrado_em,NOW()),atualizado_em=NOW() WHERE id=${atendimentoId} AND status NOT IN ('ATENDIMENTO_FINALIZADO','CANCELADO') RETURNING id`);
     operations.push(sql`INSERT INTO mensagens (atendimento_id,tipo_remetente,texto) VALUES (${atendimentoId},'SISTEMA',${message})`);
     operations.push(sql`INSERT INTO eventos_atendimento (atendimento_id,tipo_evento,detalhes) VALUES (${atendimentoId},'ATENDIMENTO_CANCELADO',${JSON.stringify({orcamentoId:existingQuote?.id||null,usuario:user.id})}::jsonb)`);
     const results=await sql.transaction(operations);
