@@ -97,7 +97,19 @@ test('builds de produção apontam para o domínio oficial e validam todos os cl
 
 test('certidão pode ser temporariamente opcional por configuração',()=>{const core=fs.readFileSync(path.join(__dirname,'..','api','montadores','_core.js'),'utf8'),registration=fs.readFileSync(path.join(__dirname,'..','api','montadores','cadastro.js'),'utf8'),admin=fs.readFileSync(path.join(__dirname,'..','api','admin','montador-cadastros.js'),'utf8');assert.match(core,/MONTADOR_CERTIDAO_OBRIGATORIA/);assert.match(core,/MONTADOR_CERTIDAO_TUTORIAL_URL/);assert.match(registration,/certidaoObrigatoria\?'PENDENTE_DOCUMENTO':'CADASTRO_RECEBIDO'/);assert.match(admin,/status==='APROVADO'&&c\.certificateRequired\(\)/)});
 
-test('área do montador exige leitura dos termos e oferece a Store Android',()=>{const html=fs.readFileSync(path.join(__dirname,'..','dist','area-do-montador','index.html'),'utf8'),ui=fs.readFileSync(path.join(__dirname,'..','dist','area-do-montador','montador.js'),'utf8');assert.match(html,/data-portal-tab="store"/);assert.match(html,/JLL-Montador-Android\.apk/);assert.match(html,/aceiteLgpd" type="checkbox" required disabled/);assert.match(ui,/Date\.now\(\)-openedAt>=1200/);assert.match(ui,/Abra o termo indicado, leia até o final/)});
+test('área do montador permite marcar os três aceites sem exigir leitura e oferece a Store Android',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'..','dist','area-do-montador','index.html'),'utf8');
+  const ui=fs.readFileSync(path.join(__dirname,'..','dist','area-do-montador','montador.js'),'utf8');
+  assert.match(html,/data-portal-tab="store"/);
+  assert.match(html,/JLL-Montador-Android\.apk/);
+  for(const name of ['aceiteLgpd','aceiteAutonomo','aceiteAntecedentes']){
+    const control=html.match(new RegExp(`<input name="${name}"[^>]*>`))?.[0]||'';
+    assert.match(control,/type="checkbox" required/);
+    assert.doesNotMatch(control,/\bdisabled\b/);
+  }
+  assert.match(ui,/termNames\.find\(name=>!form\.elements\[name\]\.checked\)/);
+  assert.doesNotMatch(ui,/openedAt|leia até o final/);
+});
 
 test('cancelamento é atômico e também cancela o orçamento',()=>{const source=fs.readFileSync(path.join(__dirname,'..','api','admin','cancel.js'),'utf8');assert.match(source,/sql\.transaction\(operations\)/);assert.match(source,/status_orcamento='CANCELADO'/);assert.match(source,/status='CANCELADO'/);assert.match(source,/Nenhuma alteração parcial foi mantida/)});
 
