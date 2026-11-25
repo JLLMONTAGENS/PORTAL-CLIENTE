@@ -21,6 +21,7 @@
   <meta property="og:image:alt" content="Convite JLL Montagens para montadores parceiros PJ no Rio de Janeiro">
   <link rel="icon" href="/assets/brand/jll-favicon.svg">
   <link rel="stylesheet" href="/convite-montador/convite.css">
+  <script type="module" src="/convite-montador/atendimento.js"></script>
 </head>
 <body>
   <header class="hero">
@@ -33,7 +34,7 @@
           <p class="lead">A JLL Montagens está ampliando sua rede de profissionais de montagem e instalação de móveis no Rio de Janeiro. Se você tem experiência e atua como PJ, queremos conhecer seu trabalho.</p>
           <div class="actions">
             <a class="button primary" href="/area-do-montador/">Acessar a Área do Montador</a>
-            <a class="button outline" href="https://w.app/y4mrqu">Falar pelo WhatsApp</a>
+            <button class="button outline" type="button" data-whatsapp>Falar pelo WhatsApp</button>
           </div>
         </div>
         <aside class="hero-note">
@@ -69,8 +70,23 @@
         <track kind="captions" src="/convite-montador/tutorial.vtt" srclang="pt-BR" label="Português (Brasil)" default>
         <p>Seu navegador não reproduz o vídeo. <a href="/convite-montador/tutorial.mp4">Baixar tutorial</a>.</p>
       </video>
+      <section class="installation" aria-labelledby="instalacao">
+        <h3 id="instalacao">Como instalar o JLL Montador no Android</h3>
+        <p>Siga as etapas no celular em que pretende usar o aplicativo.</p>
+        <ol class="install-steps">
+          <li><h4>Acesse a Área do Montador</h4><p>Abra a <a href="/area-do-montador/">Área do Montador</a> e toque em <strong>Já tenho cadastro</strong>.</p><img src="/convite-montador/passo-1.jpg" alt="Botão Já tenho cadastro no topo da Área do Montador" width="720" height="1600" loading="lazy"></li>
+          <li><h4>Entre com seu e-mail e senha</h4><p>Use os dados do cadastro. Se não lembrar a senha, toque em <strong>Esqueci minha senha</strong>. O link para redefinir a senha será enviado ao e-mail cadastrado.</p><img src="/convite-montador/passo-2.jpg" alt="Formulário de login com a opção Esqueci minha senha" width="720" height="1600" loading="lazy"></li>
+          <li><h4>Baixe o aplicativo oficial</h4><p>Após entrar, abra a aba <strong>JLL Montagens Store</strong> e toque em <strong>Baixar aplicativo Android</strong>.</p><img src="/convite-montador/passo-3.jpg" alt="Botão Baixar aplicativo Android na JLL Montagens Store" width="720" height="1600" loading="lazy"></li>
+          <li><h4>Abra o APK</h4><p>Toque em <strong>Abrir</strong> na notificação de download concluído. Se ela já sumiu, procure o arquivo na pasta <strong>Downloads</strong> do celular.</p><img src="/convite-montador/passo-4.jpg" alt="Notificação de download concluído com a opção Abrir" width="720" height="553" loading="lazy"></li>
+          <li><h4>Confirme a instalação</h4><p>Quando o Android mostrar <strong>JLL Montador</strong> e perguntar se deseja instalar o aplicativo, toque em <strong>Instalar</strong>.</p><img src="/convite-montador/passo-5.jpg" alt="Confirmação de instalação do JLL Montador no Android" width="720" height="1600" loading="lazy"></li>
+          <li><h4>Confira o aviso sobre o desenvolvedor, se aparecer</h4><p>Se o Android disser que não conseguiu verificar o desenvolvedor, toque em <strong>Mais detalhes</strong>. Prossiga com <strong>Instalar mesmo assim</strong> somente se você baixou este APK pela Store oficial em <strong>jllmontagens.com.br</strong>. Se tiver dúvida sobre a origem, feche a instalação.</p><div class="install-photos"><img src="/convite-montador/passo-6.jpg" alt="Aviso do Android com a opção Mais detalhes" width="720" height="1600" loading="lazy"><img src="/convite-montador/passo-6-1.jpg" alt="Detalhes do aviso sobre a verificação do desenvolvedor" width="720" height="1600" loading="lazy"></div></li>
+          <li><h4>Confira a solicitação do Play Protect</h4><p>Se aparecer <strong>A verificação do app é recomendada</strong>, você pode tocar em <strong>Verificar app</strong>. A opção <strong>Instalar sem análise</strong> aparece em alguns aparelhos. Só prossiga por ela se tiver certeza de que baixou o APK da Store oficial. Se houver alerta de app nocivo, interrompa.</p><img src="/convite-montador/passo-7.jpg" alt="Aviso do Play Protect com as opções de verificação" width="720" height="1600" loading="lazy"></li>
+          <li><h4>Encontre o JLL Montador</h4><p>Depois de instalar, pesquise <strong>JLL Montador</strong> na lista de aplicativos do celular e toque no ícone para abrir.</p><img src="/convite-montador/passo-8.jpg" alt="Ícone do JLL Montador nos resultados da busca de apps locais" width="720" height="1051" loading="lazy"></li>
+          <li><h4>Entre no aplicativo</h4><p>Digite o mesmo e-mail e senha que você usa na Área do Montador e toque em <strong>Entrar</strong>.</p><img src="/convite-montador/passo-9.jpg" alt="Tela de login do aplicativo JLL Montador" width="720" height="1600" loading="lazy"></li>
+        </ol>
+      </section>
       <details>
-        <summary>Ler o passo a passo</summary>
+        <summary>Ler o resumo do vídeo</summary>
         <ol>
           <li>Acesse a Área do Montador e toque em <strong>Quero me cadastrar</strong>. Preencha seus dados, leia os termos e siga as orientações sobre documentos e validação.</li>
           <li>Use <strong>Já tenho cadastro</strong> para entrar e acompanhar a análise em <strong>Meu cadastro</strong>.</li>
@@ -84,10 +100,20 @@
       <div><h2 id="comecar">Quer fazer parte da rede?</h2><p>Envie seu cadastro para análise. Se tiver dúvidas sobre valores, documentos ou a parceria, fale com nossa equipe.</p></div>
       <div class="actions">
         <a class="button primary" href="/area-do-montador/">Abrir cadastro</a>
-        <a class="button contact" href="https://w.app/y4mrqu">Falar pelo WhatsApp</a>
+        <button class="button contact" type="button" data-whatsapp>Falar pelo WhatsApp</button>
       </div>
     </section>
   </main>
+  <dialog id="whatsapp-hours" aria-labelledby="whatsapp-hours-title">
+    <h2 id="whatsapp-hours-title">Estamos fora do horário de atendimento</h2>
+    <p>Fale com a equipe pelo WhatsApp nos horários abaixo, pelo horário de Brasília.</p>
+    <ul>
+      <li><strong>Segunda a sexta</strong> · 08h às 20h</li>
+      <li><strong>Sábado</strong> · 09h às 16h</li>
+      <li>Sem atendimento aos domingos e feriados.</li>
+    </ul>
+    <form method="dialog"><button class="button primary" autofocus>Entendi</button></form>
+  </dialog>
   <footer><div class="wrap footer"><div><strong>JLL Montagens</strong><br>CNPJ 42.172.099/0001-59</div><a href="mailto:admin@jllmontagens.com.br">admin@jllmontagens.com.br</a></div></footer>
 </body>
 </html>

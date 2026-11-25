@@ -412,15 +412,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Text(
                         'Serviços, execução e repasses em um só lugar.',
                       ),
-                      Text(
-                        vercelProtectionBypass.isEmpty
-                            ? 'Homologação · bypass não configurado'
-                            : 'Homologação · bypass configurado',
-                        style: const TextStyle(
-                          color: Colors.blueGrey,
-                          fontSize: 12,
-                        ),
-                      ),
                       const SizedBox(height: 22),
                       TextFormField(
                         controller: email,

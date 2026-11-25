@@ -38,6 +38,19 @@ details ol{margin-top:14px}
 footer{background:#182948;color:#e0e9f5;padding:26px 0}
 .footer{display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;align-items:center}
 .footer a{color:inherit;overflow-wrap:anywhere}
+button.button{font:inherit;font-weight:750;cursor:pointer}
+button.outline{background:transparent}
+.installation{max-width:850px;margin-top:28px}
+.install-steps{display:grid;gap:14px;padding-left:1.7em}
+.install-steps li{padding:16px clamp(10px,3vw,24px);margin:0;background:#fff;border:1px solid #d9e1ed;border-radius:12px}
+.install-steps li::marker{font-weight:800;color:#a34a00}
+.install-steps h4{font-size:1.1rem;margin:0 0 6px}
+.install-steps img{display:block;width:min(100%,300px);height:auto;border:1px solid #d9e1ed;border-radius:10px}
+.install-photos{display:flex;gap:10px;flex-wrap:wrap}
+#whatsapp-hours{width:min(460px,calc(100% - 28px));border:1px solid #d9e1ed;border-radius:16px;padding:24px;color:#172743}
+#whatsapp-hours h2{font-size:1.45rem}
+#whatsapp-hours::backdrop{background:#14223baa}
+#whatsapp-hours form{display:flex;justify-content:flex-end;margin-top:20px}
 @media(max-width:700px){
   .hero{padding:20px 0 32px}
   .hero-grid,.overview,.closing{grid-template-columns:1fr}
