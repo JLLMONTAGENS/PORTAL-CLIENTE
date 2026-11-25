@@ -13,7 +13,80 @@ if(termDetails[0])termDetails[0].querySelector('summary').textContent='Aviso de 
 if(termDetails[1])termDetails[1].querySelector('summary').textContent='Termo de Prestação de Serviços Autônomos — versão 2026-11-18.1';
 if(termDetails[2]){termDetails[2].querySelector('summary').textContent='Compromisso e autorização para futura certidão — versão 2026-11-18.1';const paragraphs=termDetails[2].querySelectorAll('p');if(paragraphs[1])paragraphs[1].textContent='O documento ficará acessível somente a administradores autorizados, com registro de acesso. Neste momento o envio não é obrigatório e não bloqueia a análise do cadastro. Comprometo-me a fornecê-lo futuramente quando a JLL Montagens disponibilizar orientação simples e objetiva para emissão.'}
 form.elements.possuiCnpj.addEventListener('change',e=>{$('#cnpj-field').hidden=!e.target.checked;form.elements.cnpj.required=e.target.checked;if(!e.target.checked)form.elements.cnpj.value=''});
-form.elements.cep.addEventListener('blur',async()=>{const cep=onlyDigits(form.elements.cep.value),message=$('#cep-message');if(cep.length!==8)return;message.textContent='Consultando CEP…';try{const response=await fetch(`https://viacep.com.br/ws/${cep}/json/`),data=await response.json();if(data.erro)throw new Error();const parts=String(data.logradouro||'').split(' '),known=['Rua','Avenida','Travessa','Estrada','Rodovia','Alameda','Praça','Largo','Viela'];form.elements.tipoLogradouro.value=known.includes(parts[0])?parts.shift():form.elements.tipoLogradouro.value;form.elements.logradouro.value=parts.length?parts.join(' '):data.logradouro||'';form.elements.bairro.value=data.bairro||'';form.elements.cidade.value=data.localidade||'';form.elements.uf.value=data.uf||'';message.textContent='Endereço localizado.'}catch{message.textContent='CEP não localizado. Preencha o endereço manualmente.'}});
+const cepField = form.elements.cep;
+const cepMessage = $('#cep-message');
+const cepCache = new Map();
+const autoAddress = new Map();
+const streetTypes = new Set(['Rua','Avenida','Travessa','Estrada','Rodovia','Alameda','Praça','Largo','Viela']);
+let currentCep = '';
+let cepRequest;
+
+function fillAddress(data) {
+  const parts = (data.logradouro || '').trim().split(/\s+/);
+  const type = streetTypes.has(parts[0]) ? parts.shift() : '';
+  const address = {
+    tipoLogradouro: type, logradouro: parts.join(' '),
+    bairro: data.bairro, cidade: data.localidade, uf: data.uf,
+  };
+  for (const [name, value] of Object.entries(address)) {
+    const field = form.elements[name];
+    if (!value || field.value.trim()) continue;
+    field.value = value;
+    autoAddress.set(name, value);
+  }
+  const complete = Object.keys(address).every(name => form.elements[name].value.trim());
+  cepMessage.textContent = complete ? 'Endereço localizado.' : 'CEP localizado. Complete os campos do endereço.';
+}
+
+async function lookupCep() {
+  const cep = onlyDigits(cepField.value);
+  if (cep === currentCep) return;
+  currentCep = cep;
+  cepRequest?.abort();
+  cepRequest = undefined;
+  for (const [name, value] of autoAddress) {
+    if (form.elements[name].value === value) form.elements[name].value = '';
+  }
+  autoAddress.clear();
+  cepMessage.textContent = '';
+  if (cep.length !== 8) return;
+  if (cepCache.has(cep)) return fillAddress(cepCache.get(cep));
+
+  const request = new AbortController();
+  cepRequest = request;
+  const timeout = setTimeout(() => request.abort(), 4500);
+  cepMessage.textContent = 'Consultando CEP…';
+  try {
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {signal: request.signal});
+    if (!response.ok) throw new Error('Consulta indisponível');
+    const data = await response.json();
+    if (cepRequest !== request || onlyDigits(cepField.value) !== cep) return;
+    if (data.erro) {
+      cepMessage.textContent = 'CEP não localizado. Confira o número ou preencha o endereço.';
+      return;
+    }
+    if (cepCache.size >= 30) cepCache.delete(cepCache.keys().next().value);
+    cepCache.set(cep, data);
+    fillAddress(data);
+  } catch {
+    if (cepRequest === request) {
+      cepMessage.textContent = 'Consulta indisponível. Você pode preencher o endereço manualmente.';
+    }
+  } finally {
+    clearTimeout(timeout);
+    if (cepRequest === request) cepRequest = undefined;
+  }
+}
+
+cepField.addEventListener('input', lookupCep);
+cepField.addEventListener('blur', lookupCep);
+form.addEventListener('reset', () => {
+  currentCep = '';
+  cepRequest?.abort();
+  cepRequest = undefined;
+  autoAddress.clear();
+  cepMessage.textContent = '';
+});
 $('#bank-search').addEventListener('change',e=>{const match=banks.find(([code,name])=>`${code} - ${name}`===e.target.value);form.elements.bancoCodigo.value=match?.[0]||'';form.elements.bancoNome.value=match?.[1]||''});
 form.addEventListener('submit',async e=>{e.preventDefault();const message=$('#register-message'),button=e.currentTarget.querySelector('button[type=submit]');message.className='form-message';message.textContent='';const pendingAcceptance=termNames.find(name=>!form.elements[name].checked);if(pendingAcceptance){message.textContent='Marque o aceite dos três termos para continuar.';form.elements[pendingAcceptance].focus();return}if(!form.reportValidity())return;const values=Object.fromEntries(new FormData(form));values.possuiCnpj=form.elements.possuiCnpj.checked;values.aceiteLgpd=form.elements.aceiteLgpd.checked;values.aceiteAutonomo=form.elements.aceiteAutonomo.checked;values.aceiteAntecedentes=form.elements.aceiteAntecedentes.checked;values.bancoCodigo=form.elements.bancoCodigo.value;values.bancoNome=form.elements.bancoNome.value;if(!values.bancoCodigo){message.textContent='Selecione um banco válido na lista.';return}button.disabled=true;try{await api('/api/montadores/cadastro',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});form.reset();message.className='form-message success';message.textContent='Cadastro recebido. Abrindo seu acompanhamento…';await loadStatus();show('status')}catch(error){message.textContent=error.message}finally{button.disabled=false}});
 $('#login-form').addEventListener('submit',async e=>{e.preventDefault();const loginForm=e.currentTarget,message=$('#login-message'),button=loginForm.querySelector('button[type=submit]'),values=Object.fromEntries(new FormData(loginForm));values.manterConectado=loginForm.elements.manterConectado.checked;button.disabled=true;message.textContent='';try{await api('/api/montadores/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});loginForm.reset();await loadStatus();show('status')}catch(error){message.textContent=error.message}finally{button.disabled=false}});
