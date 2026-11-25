@@ -6,7 +6,12 @@ module.exports=async function(req,res){
   try{
     const sql=getDatabase(),id=String(req.body?.id||''),key=String(req.body?.operacaoId||req.headers['x-idempotency-key']||'').trim();
     if(key){const existing=(await sql`SELECT * FROM fotos_servico_montador WHERE montador_id=${assembler.id} AND chave_idempotencia=${key} LIMIT 1`)[0];if(existing)return res.status(200).json({foto:{id:existing.id,nomeArquivo:existing.nome_arquivo},repetida:true})}
-    const service=(await sql`SELECT o.id,o.atendimento_id,o.status_execucao_montador FROM orcamentos o WHERE o.id=${id} AND o.montador_id=${assembler.id} LIMIT 1`)[0];if(!service)return res.status(404).json({error:'Serviço não encontrado.'});
+    const service=(await sql`SELECT o.id,o.atendimento_id,o.status_execucao_montador
+      FROM orcamentos o JOIN atendimentos a ON a.id=o.atendimento_id
+      WHERE o.id=${id} AND o.montador_id=${assembler.id}
+        AND o.status_orcamento<>'CANCELADO' AND a.status<>'CANCELADO'
+      LIMIT 1`)[0];
+    if(!service)return res.status(404).json({error:'Serviço não encontrado ou cancelado.'});
     if(!['ACEITO','EM_EXECUCAO'].includes(service.status_execucao_montador))return res.status(409).json({error:'As fotos são liberadas depois do aceite e antes da conclusão.'});
     const mime=String(req.body?.mimeType||'').toLowerCase(),check=signatures[mime],buffer=Buffer.from(String(req.body?.data||''),'base64'),fileName=String(req.body?.fileName||'foto').replace(/[^a-zA-Z0-9._-]/g,'-').slice(0,120);
     if(!check||!buffer.length||buffer.length>6*1024*1024||!check(buffer))return res.status(400).json({error:'Envie uma imagem JPEG, PNG ou WebP válida de até 6 MB.'});

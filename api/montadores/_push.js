@@ -38,16 +38,37 @@ async function sendToFirebase({credentials,accessToken,target,notification,data}
 }
 
 async function notifyAssignment({montadorId,orcamentoId,numeroAtendimento,descricaoServico,bairro,cidade,valorRepasse,agendadoPara}){
+  const preview=[String(descricaoServico||'Novo serviço').replace(/\s+/g,' ').slice(0,80),[bairro,cidade].filter(Boolean).join(', '),Number(valorRepasse||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})].filter(Boolean).join(' · ');
+  return notifyAssembler({
+    montadorId, orcamentoId, type: 'NOVO_SERVICO', title: 'Novo serviço disponível',
+    message: 'Você recebeu uma nova proposta de serviço.', preview,
+    details: {numeroAtendimento, descricaoServico, bairro, cidade, valorRepasse: valorRepasse || 0, agendadoPara},
+  });
+}
+
+async function notifyCancellation({montadorId, orcamentoId, numeroAtendimento}){
+  const message = `O serviço do atendimento #${numeroAtendimento} foi cancelado e retirado da sua lista.`;
+  try {
+    await notifyAssembler({
+      montadorId, orcamentoId, type: 'SERVICO_CANCELADO', title: 'Serviço cancelado',
+      message, preview: message, details: {numeroAtendimento},
+    });
+  } catch (error) {
+    console.error('Não foi possível registrar o aviso de serviço cancelado', error);
+  }
+}
+
+async function notifyAssembler({montadorId, orcamentoId, type, title, message, preview, details}){
   if(!montadorId||!orcamentoId)return;
-  const sql=getDatabase(),credentials=firebaseCredentials(),notification=(await sql`INSERT INTO notificacoes_push_montador (montador_id,orcamento_id,tipo,titulo,mensagem,dados,status) VALUES (${montadorId},${orcamentoId},'NOVO_SERVICO','Novo serviço disponível','Você recebeu uma nova proposta de serviço.',${JSON.stringify({orcamentoId,numeroAtendimento:String(numeroAtendimento||''),descricaoServico:String(descricaoServico||''),bairro:String(bairro||''),cidade:String(cidade||''),valorRepasse:String(valorRepasse||0),agendadoPara:String(agendadoPara||'')})}::jsonb,${credentials?'PENDENTE':'AGUARDANDO_CONFIGURACAO'}) RETURNING id`)[0];
+  const loggedDetails = Object.fromEntries(Object.entries(details).map(([key, value]) => [key, String(value ?? '')]));
+  const sql=getDatabase(),credentials=firebaseCredentials(),notification=(await sql`INSERT INTO notificacoes_push_montador (montador_id,orcamento_id,tipo,titulo,mensagem,dados,status) VALUES (${montadorId},${orcamentoId},${type},${title},${message},${JSON.stringify({orcamentoId,...loggedDetails})}::jsonb,${credentials?'PENDENTE':'AGUARDANDO_CONFIGURACAO'}) RETURNING id`)[0];
   if(!credentials?.project_id||!credentials?.client_email||!credentials?.private_key)return;
   try{
     const token=await accessToken(credentials),devices=await sql`SELECT id,push_token FROM dispositivos_montador WHERE montador_id=${montadorId} AND ativo=TRUE`;
     if(!devices.length){await sql`UPDATE notificacoes_push_montador SET status='SEM_DISPOSITIVO',atualizado_em=NOW() WHERE id=${notification.id}`;return}
     const results=[];
     for(const device of devices){
-      const preview=[String(descricaoServico||'Novo serviço').replace(/\s+/g,' ').slice(0,80),[bairro,cidade].filter(Boolean).join(', '),Number(valorRepasse||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})].filter(Boolean).join(' · ');
-      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title:'Novo serviço disponível',body:preview},data:{tipo:'NOVO_SERVICO',orcamentoId:String(orcamentoId)}});
+      const {response,body,targetType}=await sendToFirebase({credentials,accessToken:token,target:device.push_token,notification:{title,body:preview},data:{tipo:type,orcamentoId:String(orcamentoId)}});
       results.push({deviceId:device.id,targetType,ok:response.ok,status:response.status,resposta:body.slice(0,300)});
       if([404,410].includes(response.status))await sql`UPDATE dispositivos_montador SET ativo=FALSE WHERE id=${device.id}`;
     }
@@ -55,4 +76,4 @@ async function notifyAssignment({montadorId,orcamentoId,numeroAtendimento,descri
   }catch(error){console.error('Push do montador falhou',error);await sql`UPDATE notificacoes_push_montador SET status='FALHOU',ultimo_erro=${String(error.message||error).slice(0,500)},atualizado_em=NOW() WHERE id=${notification.id}`}
 }
 
-module.exports={notifyAssignment};
+module.exports={notifyAssignment,notifyCancellation};

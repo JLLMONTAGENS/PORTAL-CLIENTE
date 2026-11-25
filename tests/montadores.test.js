@@ -101,6 +101,20 @@ test('área do montador exige leitura dos termos e oferece a Store Android',()=>
 
 test('cancelamento é atômico e também cancela o orçamento',()=>{const source=fs.readFileSync(path.join(__dirname,'..','api','admin','cancel.js'),'utf8');assert.match(source,/sql\.transaction\(operations\)/);assert.match(source,/status_orcamento='CANCELADO'/);assert.match(source,/status='CANCELADO'/);assert.match(source,/Nenhuma alteração parcial foi mantida/)});
 
+test('cancelar atendimento ou orçamento avisa o montador após gravar e exclui cancelados das listas',()=>{
+  const read=(...parts)=>fs.readFileSync(path.join(__dirname,'..',...parts),'utf8');
+  for(const file of ['cancel.js','cancel-quote.js']){
+    const route=read('api','admin',file);
+    assert.match(route,/status_execucao_montador==='CONCLUIDO'/);
+    assert.match(route,/await notifyCancellation\(\{\s*montadorId:.*montador_id/);
+    assert.ok(route.indexOf('await sql.transaction')<route.indexOf('await notifyCancellation'));
+  }
+  const services=read('api','montadores','servicos.js');
+  assert.match(services,/WHERE o\.montador_id=.*AND o\.status_orcamento<>'CANCELADO' AND a\.status<>'CANCELADO' ORDER BY/);
+  assert.match(services,/WHERE o\.id=.*AND o\.status_orcamento<>'CANCELADO' AND a\.status<>'CANCELADO' LIMIT 1/);
+  assert.match(read('api','montadores','_push.js'),/type: 'SERVICO_CANCELADO', title: 'Serviço cancelado'/);
+});
+
 test('cancelamento preserva o botão após a confirmação assíncrona e chama a API',()=>{const source=fs.readFileSync(path.join(__dirname,'..','dist','admin','admin-v2.js'),'utf8');assert.match(source,/const button=event\.currentTarget,warning=/);assert.match(source,/button\.disabled=true;try\{const result=await api\('\/api\/admin\/cancel'/);assert.doesNotMatch(source,/Confirmar cancelamento'\}\)\)return;event\.currentTarget/)});
 
 test('atalhos móveis levam diretamente ao cadastro ou login do montador',()=>{const source=fs.readFileSync(path.join(__dirname,'..','dist','area-do-montador','montador.js'),'utf8'),css=fs.readFileSync(path.join(__dirname,'..','dist','area-do-montador','montador.css'),'utf8');assert.match(source,/showAndFocus/);assert.match(source,/scrollIntoView\(\{behavior:'smooth',block:'start'\}\)/);assert.match(source,/show-register'\)\.onclick=\(\)=>showAndFocus\('register'\)/);assert.match(source,/show-login'\)\.onclick=\(\)=>showAndFocus\('login'\)/);assert.match(css,/\.panel\{scroll-margin-top:/)});
