@@ -1,6 +1,7 @@
 global.__JLL_NEON_SERVERLESS=require('@neondatabase/serverless');
 global.__JLL_VERCEL_BLOB=require('@vercel/blob');
 global.__JLL_NODEMAILER=require('nodemailer');
+global.__JLL_WEB_PUSH=require('web-push');
 
 const handlers={
   login:()=>require('../../../api/admin/login'),
@@ -16,6 +17,7 @@ const handlers={
   staff:()=>require('../../_admin-legacy/staff'),
   users:()=>require('../../../api/admin/users'),
   dispositivo:()=>require('../../../api/admin/dispositivo'),
+  'push-web':()=>require('../../../api/admin/push-web'),
   presenca:()=>require('../../../api/admin/presenca'),
   supervisao:()=>require('../../../api/admin/supervisao'),
   'chat-interno':()=>require('../../../api/admin/chat-interno'),

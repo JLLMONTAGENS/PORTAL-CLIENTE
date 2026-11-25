@@ -1,6 +1,7 @@
 global.__JLL_NEON_SERVERLESS=require('@neondatabase/serverless');
 global.__JLL_VERCEL_BLOB=require('@vercel/blob');
 global.__JLL_NODEMAILER=require('nodemailer');
+global.__JLL_WEB_PUSH=require('web-push');
 
 const handlers={
   'accept-quote':()=>require('../../../api/conversations/accept-quote'),

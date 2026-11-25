@@ -1,0 +1,25 @@
+.ios-home-app .ios-push-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .55rem;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid #e1ebe8;
+  background: #f7f9fc;
+  color: #355158;
+  font-size: .85rem;
+}
+.ios-push-controls button:disabled { opacity: .65; }
+.ios-home-app input:not([type="checkbox"]),
+.ios-home-app select,
+.ios-home-app textarea {
+  font-size: max(16px, 1rem);
+}
+.ios-home-app .login-card { margin-top: max(1rem, env(safe-area-inset-top)); }
+html.ios-home-app.app-mode .quote-panel,
+html.ios-home-app.app-mode .payment-panel {
+  position: absolute;
+  inset: 0;
+  padding: 16px;
+  overscroll-behavior: contain;
+}

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1A2B4C">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="/assets/brand/jll-favicon-512.png">
   <link rel="icon" type="image/svg+xml" href="/assets/brand/jll-favicon.svg">
   <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="/admin/ios-app.css">
 </head>
 <body>
   <main class="admin-shell">
@@ -41,7 +42,7 @@
         <p id="history-empty" class="empty" hidden>Nenhum atendimento encerrado encontrado com esses filtros.</p>
       </section>
       <section id="users-view" class="users-view" hidden><div class="users-heading"><div><span class="eyebrow">Acesso administrativo</span><h2>Usuários do painel</h2><p>Cadastre administradores e atendentes. O login é livre e o e-mail obrigatório permite recuperar a senha.</p></div><button id="new-user">Novo usuário</button></div><div id="users-list" class="users-list"></div></section>
-      <section id="internal-chat-view" class="ops-view" hidden><div class="ops-heading"><span class="eyebrow">Equipe JLL</span><h2>Chat interno</h2><p>Converse com a equipe e encaminhe mensagens ou imagens dos atendimentos.</p></div><div class="internal-chat-layout"><aside id="internal-contacts" class="internal-contacts"></aside><section class="internal-thread"><header><button id="internal-back" type="button" class="ghost" aria-label="Voltar aos contatos">←</button><strong id="internal-thread-title">Selecione um contato</strong></header><div id="internal-messages" class="internal-messages"><p class="empty">Escolha um usuário para iniciar a conversa.</p></div><form id="internal-composer" hidden><button id="internal-attach" type="button" class="ghost" aria-label="Enviar imagem">＋</button><input id="internal-file" type="file" accept="image/jpeg,image/png,image/webp" hidden><input name="texto" autocomplete="off" placeholder="Mensagem interna..."><button type="submit">Enviar</button></form></section></div></section>
+      <section id="internal-chat-view" class="ops-view" hidden><div class="ops-heading"><span class="eyebrow">Equipe JLL</span><h2>Chat interno</h2><p>Converse com a equipe e encaminhe mensagens ou imagens dos atendimentos.</p></div><div class="internal-chat-layout"><aside id="internal-contacts" class="internal-contacts"></aside><section class="internal-thread"><header><button id="internal-back" type="button" class="ghost" aria-label="Voltar aos contatos">←</button><strong id="internal-thread-title">Selecione um contato</strong></header><div id="internal-messages" class="internal-messages"><p class="empty">Escolha um usuário para iniciar a conversa.</p></div><form id="internal-composer" hidden><button id="internal-attach" type="button" class="ghost" aria-label="Enviar imagem">＋</button><input id="internal-file" type="file" accept="image/*" hidden><input name="texto" autocomplete="off" placeholder="Mensagem interna..."><button type="submit">Enviar</button></form></section></div></section>
       <section id="supervision-view" class="ops-view" hidden><div class="ops-heading"><span class="eyebrow">Supervisão administrativa</span><h2>Usuários em atendimento</h2><p>Presença da equipe e acesso supervisionado às conversas atribuídas.</p></div><div class="supervision-layout"><aside><h3>On-line</h3><div id="supervision-online"></div><h3>Off-line</h3><div id="supervision-offline"></div></aside><section><div id="supervision-attendances" class="supervision-attendances"><p class="empty">Selecione um usuário.</p></div><div id="supervision-conversation" class="supervision-conversation"><p class="empty">Selecione um atendimento para acompanhar.</p></div></section></div></section>
       <section id="quotes-view" class="quotes-view" hidden>
         <div class="quotes-heading"><div><span class="eyebrow">Gestão financeira e operacional</span><h2>Orçamentos</h2><p>Acompanhe recebimentos, repasses, montadores e valores dos atendimentos.</p></div><button id="refresh-quotes" class="refresh">Atualizar</button></div>
@@ -74,6 +75,7 @@
     <div id="system-dialog" class="modal" role="dialog" aria-modal="true" aria-labelledby="system-dialog-title" hidden><div class="modal-card system-dialog-card"><button id="system-dialog-close" class="modal-close" type="button" aria-label="Fechar">×</button><span class="eyebrow">JLL MONTAGENS</span><h2 id="system-dialog-title">Confirmar ação</h2><p id="system-dialog-message"></p><div class="system-dialog-actions"><button id="system-dialog-cancel" class="secondary" type="button">Cancelar</button><button id="system-dialog-confirm" type="button">Confirmar</button></div></div></div>
     <div id="media-viewer" class="media-viewer" role="dialog" aria-modal="true" aria-label="Visualização da imagem" hidden><button id="close-media-viewer" class="media-viewer-close" type="button" aria-label="Fechar imagem">×</button><img id="media-viewer-image" alt="Imagem ampliada"><p>Toque fora da imagem ou no × para fechar</p></div>
   </main>
+  <script src="/admin/ios-app.js"></script>
   <script src="/admin/admin-v2.js"></script>
   <script src="/admin/operations.js"></script>
 </body>
